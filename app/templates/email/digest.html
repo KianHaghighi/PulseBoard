@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+  <h1 style="color: #1a1a2e;">PulseBoard Daily Digest</h1>
+  <p>Hi {{ user.name or user.email }}, here's your startup intelligence for today.</p>
+
+  {% for article in articles %}
+  <div style="border-bottom: 1px solid #eee; padding: 16px 0;">
+    <p style="margin: 0; font-size: 12px; color: #888;">{{ article.source }} &mdash; {{ article.published_at.strftime('%b %d') if article.published_at else '' }}</p>
+    <h2 style="margin: 4px 0; font-size: 16px;">
+      <a href="{{ article.url }}" style="color: #0066cc; text-decoration: none;">{{ article.title }}</a>
+    </h2>
+    {% if article.ai_summary %}
+    <p style="margin: 6px 0; color: #333; font-size: 14px;">{{ article.ai_summary }}</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <p style="font-size: 12px; color: #aaa; margin-top: 24px;">
+    <a href="#">Unsubscribe</a> &middot; PulseBoard
+  </p>
+</body>
+</html>

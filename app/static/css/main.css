@@ -1,0 +1,89 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f5f7fa;
+  color: #1a1a2e;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.navbar {
+  background: #1a1a2e;
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.navbar-brand { color: #fff; font-weight: 700; font-size: 18px; text-decoration: none; }
+.nav-links a { color: #ccc; text-decoration: none; margin-left: 20px; font-size: 14px; }
+.nav-links a:hover { color: #fff; }
+
+.container { max-width: 800px; margin: 32px auto; padding: 0 16px; }
+
+.alert { padding: 10px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
+.alert-success { background: #d4edda; color: #155724; }
+.alert-error { background: #f8d7da; color: #721c24; }
+
+.feed-header { margin-bottom: 24px; }
+.search-bar { display: flex; gap: 8px; }
+.search-bar input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.search-bar select { padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.search-bar button { padding: 8px 16px; background: #1a1a2e; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+
+.article-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+.article-meta { font-size: 12px; color: #888; margin-bottom: 6px; }
+.source { font-weight: 600; }
+.date { margin-left: 8px; }
+.article-title { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+.article-title a { color: #1a1a2e; text-decoration: none; }
+.article-title a:hover { color: #0066cc; }
+.ai-summary { font-size: 14px; color: #444; background: #f0f4ff; border-left: 3px solid #0066cc; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px; }
+.snippet { font-size: 14px; color: #666; margin-bottom: 12px; }
+.article-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.article-actions button, .article-actions select {
+  padding: 4px 10px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 13px; background: #fff;
+}
+.btn-like.active { background: #e8f0fe; border-color: #0066cc; color: #0066cc; }
+.btn-dislike.active { background: #fce8e6; border-color: #c62828; color: #c62828; }
+.btn-summarize { background: #f0f4ff; border-color: #0066cc; color: #0066cc; }
+.btn-danger { background: #fff; border-color: #c62828; color: #c62828; }
+.btn-sm { padding: 2px 8px; font-size: 12px; }
+
+.pagination { display: flex; gap: 16px; align-items: center; justify-content: center; margin-top: 24px; }
+.pagination a { color: #0066cc; text-decoration: none; }
+
+.collection-list { list-style: none; margin-top: 16px; }
+.collection-list li { padding: 10px 0; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 12px; }
+.collection-list a { font-weight: 500; color: #1a1a2e; text-decoration: none; }
+.collection-list a:hover { color: #0066cc; }
+
+.inline-form { display: flex; gap: 8px; margin-bottom: 20px; }
+.inline-form input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.inline-form button { padding: 8px 16px; background: #1a1a2e; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+
+h1 { font-size: 22px; margin-bottom: 20px; }
+h2 { font-size: 18px; margin: 24px 0 12px; }
+
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; font-weight: 500; margin-bottom: 6px; }
+.form-group input[type="text"] { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.form-group small { display: block; color: #888; margin-top: 4px; font-size: 12px; }
+button[type="submit"] { padding: 8px 20px; background: #1a1a2e; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+
+.stats { display: flex; gap: 24px; margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #eee; }
+th { background: #f5f7fa; font-weight: 600; }
+
+@media (max-width: 600px) {
+  .search-bar { flex-direction: column; }
+  .article-actions { gap: 6px; }
+}

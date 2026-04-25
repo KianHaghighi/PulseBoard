@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Collections — PulseBoard{% endblock %}
+
+{% block content %}
+<h1>My Collections</h1>
+
+<form method="post" action="{{ url_for('profile.new_collection') }}" class="inline-form">
+  <input type="text" name="name" placeholder="New collection name..." required />
+  <button type="submit">Create</button>
+</form>
+
+{% if collections %}
+<ul class="collection-list">
+  {% for c in collections %}
+  <li>
+    <a href="{{ url_for('profile.view_collection', collection_id=c.id) }}">{{ c.name }}</a>
+    <form method="post" action="{{ url_for('profile.delete_collection', collection_id=c.id) }}" style="display:inline">
+      <button type="submit" class="btn-danger btn-sm">Delete</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No collections yet. Save articles from the feed to create one.</p>
+{% endif %}
+{% endblock %}

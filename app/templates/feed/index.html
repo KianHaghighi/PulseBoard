@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Feed — PulseBoard{% endblock %}
+
+{% block content %}
+<div class="feed-header">
+  <form class="search-bar" method="get" action="{{ url_for('feed.index') }}">
+    <input type="text" name="q" placeholder="Search articles..." value="{{ query }}" />
+    <select name="sort">
+      <option value="recent" {% if sort == 'recent' %}selected{% endif %}>Recent</option>
+      <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Popular</option>
+    </select>
+    <button type="submit">Search</button>
+  </form>
+</div>
+
+<div class="article-list">
+  {% for article in articles.items %}
+  <div class="article-card" id="article-{{ article.id }}">
+    <div class="article-meta">
+      <span class="source">{{ article.source }}</span>
+      <span class="date">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else '' }}</span>
+    </div>
+    <h2 class="article-title">
+      <a href="{{ article.url }}" target="_blank" rel="noopener">{{ article.title }}</a>
+    </h2>
+    {% if article.ai_summary %}
+      <p class="ai-summary">{{ article.ai_summary }}</p>
+    {% elif article.content_snippet %}
+      <p class="snippet">{{ article.content_snippet[:200] }}...</p>
+    {% endif %}
+    <div class="article-actions">
+      <button class="btn-like {% if user_likes.get(article.id) == 1 %}active{% endif %}"
+              onclick="vote({{ article.id }}, 1)">
+        &#9650; <span class="like-count">{{ article.like_count }}</span>
+      </button>
+      <button class="btn-dislike {% if user_likes.get(article.id) == -1 %}active{% endif %}"
+              onclick="vote({{ article.id }}, -1)">
+        &#9660;
+      </button>
+      {% if not article.ai_summary %}
+      <button class="btn-summarize" onclick="summarize({{ article.id }})">Summarize</button>
+      {% endif %}
+      {% if collections %}
+      <select class="save-select" id="save-select-{{ article.id }}">
+        <option value="">Save to...</option>
+        {% for c in collections %}
+        <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      <button onclick="saveArticle({{ article.id }})">Save</button>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <p>No articles found. Check back soon.</p>
+  {% endfor %}
+</div>
+
+{% if articles.pages > 1 %}
+<div class="pagination">
+  {% if articles.has_prev %}
+    <a href="{{ url_for('feed.index', page=articles.prev_num, q=query, sort=sort) }}">&laquo; Prev</a>
+  {% endif %}
+  <span>Page {{ articles.page }} of {{ articles.pages }}</span>
+  {% if articles.has_next %}
+    <a href="{{ url_for('feed.index', page=articles.next_num, q=query, sort=sort) }}">Next &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+<script>
+async function vote(articleId, value) {
+  const resp = await fetch(`/like/${articleId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ value }),
+  });
+  const data = await resp.json();
+  document.querySelector(`#article-${articleId} .like-count`).textContent = data.like_count;
+}
+
+async function summarize(articleId) {
+  const btn = document.querySelector(`#article-${articleId} .btn-summarize`);
+  btn.textContent = "Summarizing...";
+  btn.disabled = true;
+  const resp = await fetch(`/summarize/${articleId}`, { method: "POST" });
+  const data = await resp.json();
+  const card = document.getElementById(`article-${articleId}`);
+  const existing = card.querySelector(".snippet");
+  if (existing) existing.remove();
+  const p = document.createElement("p");
+  p.className = "ai-summary";
+  p.textContent = data.summary;
+  card.querySelector(".article-actions").before(p);
+  btn.remove();
+}
+
+async function saveArticle(articleId) {
+  const select = document.getElementById(`save-select-${articleId}`);
+  const collectionId = select.value;
+  if (!collectionId) return;
+  await fetch(`/save/${articleId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ collection_id: collectionId }),
+  });
+  select.value = "";
+}
+</script>
+{% endblock %}

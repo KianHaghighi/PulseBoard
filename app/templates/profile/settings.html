@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Settings — PulseBoard{% endblock %}
+
+{% block content %}
+<h1>Settings</h1>
+<form method="post">
+  <div class="form-group">
+    <label for="keywords">Keywords (comma-separated)</label>
+    <input type="text" id="keywords" name="keywords" value="{{ current_user.keywords }}"
+           placeholder="AI, venture capital, SaaS, fintech" />
+    <small>Articles matching these keywords appear higher in your feed and daily digest.</small>
+  </div>
+  <div class="form-group">
+    <label>
+      <input type="checkbox" name="digest_enabled" {% if current_user.digest_enabled %}checked{% endif %} />
+      Receive daily email digest
+    </label>
+  </div>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

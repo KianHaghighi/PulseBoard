@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Admin — PulseBoard{% endblock %}
+
+{% block content %}
+<h1>Admin</h1>
+<div class="stats">
+  <span>Users: <strong>{{ user_count }}</strong></span>
+  <span>Articles: <strong>{{ article_count }}</strong></span>
+</div>
+
+<h2>Recent Articles</h2>
+<table>
+  <thead>
+    <tr><th>Title</th><th>Source</th><th>Published</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for article in recent_articles %}
+    <tr>
+      <td><a href="{{ article.url }}" target="_blank">{{ article.title[:80] }}</a></td>
+      <td>{{ article.source }}</td>
+      <td>{{ article.published_at.strftime('%Y-%m-%d') if article.published_at else '-' }}</td>
+      <td>
+        <form method="post" action="{{ url_for('admin.delete_article', article_id=article.id) }}">
+          <button type="submit" class="btn-danger btn-sm">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

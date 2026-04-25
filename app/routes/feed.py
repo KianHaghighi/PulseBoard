@@ -1,0 +1,93 @@
+from flask import Blueprint, render_template, request, jsonify
+from flask_login import login_required, current_user
+from ..models.models import Article, Like, CollectionItem, Collection
+from ..extensions import db
+
+feed_bp = Blueprint("feed", __name__)
+
+
+@feed_bp.route("/")
+@login_required
+def index():
+    page = request.args.get("page", 1, type=int)
+    query = request.args.get("q", "").strip()
+    category = request.args.get("category", "").strip()
+    sort = request.args.get("sort", "recent")
+
+    articles_q = Article.query
+
+    if query:
+        articles_q = articles_q.filter(
+            Article.title.ilike(f"%{query}%") | Article.content_snippet.ilike(f"%{query}%")
+        )
+    if category:
+        articles_q = articles_q.filter(Article.category == category)
+    if sort == "popular":
+        articles_q = articles_q.order_by(Article.like_count.desc())
+    else:
+        articles_q = articles_q.order_by(Article.published_at.desc())
+
+    articles = articles_q.paginate(page=page, per_page=20, error_out=False)
+
+    user_likes = {}
+    if current_user.is_authenticated:
+        liked = Like.query.filter_by(user_id=current_user.id).all()
+        user_likes = {l.article_id: l.value for l in liked}
+
+    collections = Collection.query.filter_by(user_id=current_user.id).all()
+
+    return render_template(
+        "feed/index.html",
+        articles=articles,
+        user_likes=user_likes,
+        collections=collections,
+        query=query,
+        category=category,
+        sort=sort,
+    )
+
+
+@feed_bp.route("/like/<int:article_id>", methods=["POST"])
+@login_required
+def like(article_id):
+    value = request.json.get("value", 1)
+    article = Article.query.get_or_404(article_id)
+    existing = Like.query.filter_by(user_id=current_user.id, article_id=article_id).first()
+
+    if existing:
+        if existing.value == value:
+            article.like_count -= existing.value
+            db.session.delete(existing)
+        else:
+            article.like_count += value - existing.value
+            existing.value = value
+    else:
+        db.session.add(Like(user_id=current_user.id, article_id=article_id, value=value))
+        article.like_count += value
+
+    db.session.commit()
+    return jsonify(like_count=article.like_count)
+
+
+@feed_bp.route("/summarize/<int:article_id>", methods=["POST"])
+@login_required
+def summarize(article_id):
+    from ..services.summarizer import summarize_article
+    article = Article.query.get_or_404(article_id)
+    summary = summarize_article(article)
+    return jsonify(summary=summary)
+
+
+@feed_bp.route("/save/<int:article_id>", methods=["POST"])
+@login_required
+def save(article_id):
+    collection_id = request.json.get("collection_id")
+    Article.query.get_or_404(article_id)
+    collection = Collection.query.filter_by(id=collection_id, user_id=current_user.id).first_or_404()
+
+    existing = CollectionItem.query.filter_by(collection_id=collection_id, article_id=article_id).first()
+    if not existing:
+        db.session.add(CollectionItem(collection_id=collection_id, article_id=article_id))
+        db.session.commit()
+
+    return jsonify(saved=True)
