@@ -32,9 +32,9 @@
 - [x] RSS ingestion — TechCrunch, VentureBeat, The Information, Sifted (`app/services/ingestion.py`)
 - [x] NewsAPI ingestion (`app/services/ingestion.py`)
 - [x] `.env.example` and `.gitignore`
-- [ ] Wire `init_oauth()` into app factory (`app/__init__.py` — currently missing)
-- [ ] Add APScheduler or Celery to run ingestion on a schedule (e.g. every 30 min)
-- [ ] Populate `requirements.txt` with all deps
+- [x] Wire `init_oauth()` into app factory (`app/__init__.py`)
+- [x] Add APScheduler — `_start_scheduler()` runs ingestion every 30 min (`app/__init__.py`)
+- [x] Populate `requirements.txt` with all deps (added `apscheduler==3.10.4`)
 
 ### Week 3–4: Feed UI, Filtering, Search, Like/Dislike
 
