@@ -77,3 +77,37 @@ class CollectionItem(db.Model):
     article = db.relationship("Article")
 
     __table_args__ = (db.UniqueConstraint("collection_id", "article_id"),)
+
+
+class PublicCompany(db.Model):
+    __tablename__ = "public_companies"
+
+    id = db.Column(db.Integer, primary_key=True)
+    ticker = db.Column(db.String(10), unique=True, nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    cik = db.Column(db.String(10), unique=True, nullable=False)
+    sector = db.Column(db.String(128))
+    last_refreshed_at = db.Column(db.DateTime)
+
+    snapshots = db.relationship(
+        "FinancialSnapshot", backref="company", lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+
+
+class FinancialSnapshot(db.Model):
+    __tablename__ = "financial_snapshots"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("public_companies.id"), nullable=False)
+    period_end = db.Column(db.Date, nullable=False)
+    period_type = db.Column(db.String(10), nullable=False)  # "annual" | "quarterly"
+    fiscal_year = db.Column(db.Integer)
+    fiscal_period = db.Column(db.String(10))  # FY, Q1, Q2, Q3, Q4
+    revenue = db.Column(db.BigInteger)
+    net_income = db.Column(db.BigInteger)
+    eps_basic = db.Column(db.Float)
+    total_assets = db.Column(db.BigInteger)
+    cash = db.Column(db.BigInteger)
+
+    __table_args__ = (db.UniqueConstraint("company_id", "period_end", "period_type"),)

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Public Markets — PulseBoard{% endblock %}
+
+{% block content %}
+<div class="market-tabs">
+  <a href="{{ url_for('feed.index') }}" class="tab">Private Markets</a>
+  <a href="{{ url_for('public.index') }}" class="tab active">Public Markets</a>
+</div>
+
+<div class="public-header">
+  <h1>Public Tech Companies</h1>
+  <p class="muted">Latest annual financials sourced from SEC EDGAR.</p>
+</div>
+
+<table class="financials-table">
+  <thead>
+    <tr>
+      <th>Ticker</th>
+      <th>Company</th>
+      <th>Sector</th>
+      <th>Revenue (Annual)</th>
+      <th>Net Income</th>
+      <th>YoY Growth</th>
+      <th>Last Updated</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in summaries %}
+    <tr>
+      <td><a href="{{ url_for('public.company', company_id=s.company.id) }}" class="ticker-link">{{ s.company.ticker }}</a></td>
+      <td>{{ s.company.name }}</td>
+      <td><span class="category-tag">{{ s.company.sector }}</span></td>
+      <td>{{ s.latest.revenue | fmt_money if s.latest else '—' }}</td>
+      <td class="{{ 'positive' if s.latest and s.latest.net_income and s.latest.net_income > 0 else 'negative' if s.latest and s.latest.net_income and s.latest.net_income < 0 else '' }}">
+        {{ s.latest.net_income | fmt_money if s.latest else '—' }}
+      </td>
+      <td class="{{ 'positive' if s.yoy and s.yoy > 0 else 'negative' if s.yoy and s.yoy < 0 else '' }}">
+        {{ s.yoy | fmt_pct if s.yoy is not none else '—' }}
+      </td>
+      <td class="muted">{{ s.company.last_refreshed_at.strftime('%b %d, %Y') if s.company.last_refreshed_at else 'Never' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if not summaries %}
+<p class="muted" style="margin-top:24px;">No companies loaded yet. Run a data refresh from the admin panel.</p>
+{% endif %}
+{% endblock %}

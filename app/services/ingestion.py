@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from flask import current_app
 from ..models.models import Article
 from ..extensions import db
+from .summarizer import tag_category
 
 RSS_FEEDS = [
     "https://techcrunch.com/feed/",
@@ -43,6 +44,7 @@ def ingest_rss():
                 published_at=_parse_date(entry),
                 content_snippet=(entry.get("summary", "") or "")[:1000],
             )
+            article.category = tag_category(article)
             db.session.add(article)
             added += 1
     db.session.commit()
@@ -83,6 +85,7 @@ def ingest_newsapi(query="startup funding AI"):
             published_at=published,
             content_snippet=(item.get("description") or "")[:1000],
         )
+        article.category = tag_category(article)
         db.session.add(article)
         added += 1
     db.session.commit()

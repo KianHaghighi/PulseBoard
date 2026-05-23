@@ -39,9 +39,18 @@ body {
   margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.07);
 }
-.article-meta { font-size: 12px; color: #888; margin-bottom: 6px; }
+.article-meta { font-size: 12px; color: #888; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .source { font-weight: 600; }
-.date { margin-left: 8px; }
+.category-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #e8f0fe;
+  color: #0066cc;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
 .article-title { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
 .article-title a { color: #1a1a2e; text-decoration: none; }
 .article-title a:hover { color: #0066cc; }
@@ -59,6 +68,38 @@ body {
 
 .pagination { display: flex; gap: 16px; align-items: center; justify-content: center; margin-top: 24px; }
 .pagination a { color: #0066cc; text-decoration: none; }
+
+.market-tabs { display: flex; gap: 4px; margin-bottom: 28px; border-bottom: 2px solid #e5e7eb; }
+.tab {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+.tab:hover { color: #1a1a2e; }
+.tab.active { color: #1a1a2e; border-bottom-color: #1a1a2e; }
+
+.public-header { margin-bottom: 20px; }
+.public-header h1 { margin-bottom: 4px; }
+
+.financials-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+.financials-table th, .financials-table td { text-align: left; padding: 10px 14px; border-bottom: 1px solid #eee; }
+.financials-table th { background: #f5f7fa; font-weight: 600; font-size: 13px; color: #555; }
+.financials-table tr:hover td { background: #fafbfc; }
+
+.ticker-link { font-weight: 700; color: #1a1a2e; text-decoration: none; font-family: monospace; font-size: 14px; }
+.ticker-link:hover { color: #0066cc; }
+.ticker-badge { font-family: monospace; font-size: 16px; color: #555; font-weight: 500; margin-left: 8px; }
+.edgar-link { font-size: 13px; color: #0066cc; text-decoration: none; margin-left: 12px; }
+.edgar-link:hover { text-decoration: underline; }
+
+.company-header { margin-bottom: 24px; }
+.positive { color: #16a34a; }
+.negative { color: #dc2626; }
+.muted { color: #888; font-size: 13px; }
 
 .collection-list { list-style: none; margin-top: 16px; }
 .collection-list li { padding: 10px 0; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 12px; }

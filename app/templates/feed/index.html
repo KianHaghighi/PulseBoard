@@ -2,6 +2,11 @@
 {% block title %}Feed — PulseBoard{% endblock %}
 
 {% block content %}
+<div class="market-tabs">
+  <a href="{{ url_for('feed.index') }}" class="tab active">Private Markets</a>
+  <a href="{{ url_for('public.index') }}" class="tab">Public Markets</a>
+</div>
+
 <div class="feed-header">
   <form class="search-bar" method="get" action="{{ url_for('feed.index') }}">
     <input type="text" name="q" placeholder="Search articles..." value="{{ query }}" />
@@ -26,6 +31,9 @@
     <div class="article-meta">
       <span class="source">{{ article.source }}</span>
       <span class="date">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else '' }}</span>
+      {% if article.category %}
+      <span class="category-tag">{{ article.category }}</span>
+      {% endif %}
     </div>
     <h2 class="article-title">
       <a href="{{ article.url }}" target="_blank" rel="noopener">{{ article.title }}</a>
@@ -44,7 +52,7 @@
               onclick="vote({{ article.id }}, -1)">
         &#9660;
       </button>
-      {% if not article.ai_summary %}
+      {% if not article.ai_summary and current_user.is_authenticated %}
       <button class="btn-summarize" onclick="summarize({{ article.id }})">Summarize</button>
       {% endif %}
       {% if collections %}
@@ -90,16 +98,22 @@ async function summarize(articleId) {
   const btn = document.querySelector(`#article-${articleId} .btn-summarize`);
   btn.textContent = "Summarizing...";
   btn.disabled = true;
-  const resp = await fetch(`/summarize/${articleId}`, { method: "POST" });
-  const data = await resp.json();
-  const card = document.getElementById(`article-${articleId}`);
-  const existing = card.querySelector(".snippet");
-  if (existing) existing.remove();
-  const p = document.createElement("p");
-  p.className = "ai-summary";
-  p.textContent = data.summary;
-  card.querySelector(".article-actions").before(p);
-  btn.remove();
+  try {
+    const resp = await fetch(`/summarize/${articleId}`, { method: "POST" });
+    if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+    const data = await resp.json();
+    const card = document.getElementById(`article-${articleId}`);
+    const existing = card.querySelector(".snippet");
+    if (existing) existing.remove();
+    const p = document.createElement("p");
+    p.className = "ai-summary";
+    p.textContent = data.summary;
+    card.querySelector(".article-actions").before(p);
+    btn.remove();
+  } catch (err) {
+    btn.textContent = "Summarize";
+    btn.disabled = false;
+  }
 }
 
 async function saveArticle(articleId) {

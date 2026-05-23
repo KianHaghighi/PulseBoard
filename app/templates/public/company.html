@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ company.ticker }} — PulseBoard{% endblock %}
+
+{% block content %}
+<div class="market-tabs">
+  <a href="{{ url_for('feed.index') }}" class="tab">Private Markets</a>
+  <a href="{{ url_for('public.index') }}" class="tab active">Public Markets</a>
+</div>
+
+<div class="company-header">
+  <div>
+    <h1>{{ company.name }} <span class="ticker-badge">{{ company.ticker }}</span></h1>
+    <span class="category-tag">{{ company.sector }}</span>
+    <a class="edgar-link" href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={{ company.cik }}&type=10-K&dateb=&owner=include&count=10"
+       target="_blank" rel="noopener">SEC Filings ↗</a>
+  </div>
+  <p class="muted" style="margin-top:8px;">
+    Last refreshed: {{ company.last_refreshed_at.strftime('%b %d, %Y %H:%M UTC') if company.last_refreshed_at else 'Never' }}
+  </p>
+</div>
+
+{% if annual %}
+<h2>Annual Financials</h2>
+<table class="financials-table">
+  <thead>
+    <tr>
+      <th>Fiscal Year</th>
+      <th>Period End</th>
+      <th>Revenue</th>
+      <th>Net Income</th>
+      <th>EPS (Basic)</th>
+      <th>Total Assets</th>
+      <th>Cash</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in annual %}
+    <tr>
+      <td>FY{{ s.fiscal_year }}</td>
+      <td class="muted">{{ s.period_end.strftime('%b %d, %Y') }}</td>
+      <td>{{ s.revenue | fmt_money }}</td>
+      <td class="{{ 'positive' if s.net_income and s.net_income > 0 else 'negative' if s.net_income and s.net_income < 0 else '' }}">
+        {{ s.net_income | fmt_money }}
+      </td>
+      <td>{{ s.eps_basic | fmt_eps }}</td>
+      <td>{{ s.total_assets | fmt_money }}</td>
+      <td>{{ s.cash | fmt_money }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if quarterly %}
+<h2 style="margin-top:32px;">Quarterly Financials</h2>
+<table class="financials-table">
+  <thead>
+    <tr>
+      <th>Quarter</th>
+      <th>Period End</th>
+      <th>Revenue</th>
+      <th>Net Income</th>
+      <th>EPS (Basic)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in quarterly %}
+    <tr>
+      <td>{{ s.fiscal_period }}{{ s.fiscal_year }}</td>
+      <td class="muted">{{ s.period_end.strftime('%b %d, %Y') }}</td>
+      <td>{{ s.revenue | fmt_money }}</td>
+      <td class="{{ 'positive' if s.net_income and s.net_income > 0 else 'negative' if s.net_income and s.net_income < 0 else '' }}">
+        {{ s.net_income | fmt_money }}
+      </td>
+      <td>{{ s.eps_basic | fmt_eps }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if not annual and not quarterly %}
+<p class="muted" style="margin-top:24px;">No financial data yet. Trigger a refresh from the admin panel.</p>
+{% endif %}
+
+<p style="margin-top:24px;"><a href="{{ url_for('public.index') }}">&larr; Back to Public Markets</a></p>
+{% endblock %}
