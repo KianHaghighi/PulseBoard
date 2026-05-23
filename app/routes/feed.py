@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
+from sqlalchemy import or_
 from ..models.models import Article, Like, CollectionItem, Collection
 from ..extensions import db
 
@@ -7,7 +8,6 @@ feed_bp = Blueprint("feed", __name__)
 
 
 @feed_bp.route("/")
-@login_required
 def index():
     page = request.args.get("page", 1, type=int)
     query = request.args.get("q", "").strip()
@@ -22,7 +22,20 @@ def index():
         )
     if category:
         articles_q = articles_q.filter(Article.category == category)
-    if sort == "popular":
+
+    user_keywords = []
+    if current_user.is_authenticated:
+        user_keywords = [k.strip() for k in (current_user.keywords or "").split(",") if k.strip()]
+
+    if sort == "for_you":
+        if user_keywords:
+            kw_filters = []
+            for kw in user_keywords:
+                kw_filters.append(Article.title.ilike(f"%{kw}%"))
+                kw_filters.append(Article.content_snippet.ilike(f"%{kw}%"))
+            articles_q = articles_q.filter(or_(*kw_filters))
+        articles_q = articles_q.order_by(Article.published_at.desc())
+    elif sort == "popular":
         articles_q = articles_q.order_by(Article.like_count.desc())
     else:
         articles_q = articles_q.order_by(Article.published_at.desc())
@@ -30,11 +43,11 @@ def index():
     articles = articles_q.paginate(page=page, per_page=20, error_out=False)
 
     user_likes = {}
+    collections = []
     if current_user.is_authenticated:
         liked = Like.query.filter_by(user_id=current_user.id).all()
         user_likes = {l.article_id: l.value for l in liked}
-
-    collections = Collection.query.filter_by(user_id=current_user.id).all()
+        collections = Collection.query.filter_by(user_id=current_user.id).all()
 
     return render_template(
         "feed/index.html",
@@ -44,6 +57,7 @@ def index():
         query=query,
         category=category,
         sort=sort,
+        user_keywords=user_keywords,
     )
 
 

@@ -8,10 +8,17 @@
     <select name="sort">
       <option value="recent" {% if sort == 'recent' %}selected{% endif %}>Recent</option>
       <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Popular</option>
+      <option value="for_you" {% if sort == 'for_you' %}selected{% endif %}>For You</option>
     </select>
     <button type="submit">Search</button>
   </form>
 </div>
+
+{% if sort == 'for_you' and not user_keywords %}
+<div class="for-you-empty">
+  <p>You haven't set any keywords yet. <a href="{{ url_for('profile.settings') }}">Go to Settings</a> to add topics you care about.</p>
+</div>
+{% endif %}
 
 <div class="article-list">
   {% for article in articles.items %}
@@ -59,11 +66,11 @@
 {% if articles.pages > 1 %}
 <div class="pagination">
   {% if articles.has_prev %}
-    <a href="{{ url_for('feed.index', page=articles.prev_num, q=query, sort=sort) }}">&laquo; Prev</a>
+    <a href="{{ url_for('feed.index', page=articles.prev_num, q=query, sort=sort, category=category) }}">&laquo; Prev</a>
   {% endif %}
   <span>Page {{ articles.page }} of {{ articles.pages }}</span>
   {% if articles.has_next %}
-    <a href="{{ url_for('feed.index', page=articles.next_num, q=query, sort=sort) }}">Next &raquo;</a>
+    <a href="{{ url_for('feed.index', page=articles.next_num, q=query, sort=sort, category=category) }}">Next &raquo;</a>
   {% endif %}
 </div>
 {% endif %}
