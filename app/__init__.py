@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from flask import Flask
 from flask_session import Session
 from .extensions import db, login_manager
@@ -19,6 +20,7 @@ def create_app(config=Config):
     from .routes.profile import profile_bp
     from .routes.admin import admin_bp
     from .routes.public_markets import public_bp
+    from .routes.vc import vc_bp
 
     init_oauth(app)
 
@@ -27,11 +29,14 @@ def create_app(config=Config):
     app.register_blueprint(profile_bp, url_prefix="/profile")
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(public_bp, url_prefix="/public")
+    app.register_blueprint(vc_bp, url_prefix="/vc")
 
     with app.app_context():
         db.create_all()
         from .services.edgar import seed_companies
+        from .services.vc_data import seed_vc_firms
         seed_companies()
+        seed_vc_firms()
 
     _start_scheduler(app)
 
@@ -54,5 +59,8 @@ def _start_scheduler(app):
 
     scheduler = BackgroundScheduler()
     scheduler.add_job(run_ingest, "interval", minutes=30, id="ingest")
-    scheduler.add_job(run_edgar_refresh, "interval", hours=24, id="edgar_refresh")
+    scheduler.add_job(
+        run_edgar_refresh, "interval", hours=24, id="edgar_refresh",
+        next_run_time=datetime.now(timezone.utc),
+    )
     scheduler.start()

@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Funding Finder — PulseBoard{% endblock %}
+
+{% block content %}
+<div class="market-tabs">
+  <a href="{{ url_for('feed.index') }}" class="tab">Private Markets</a>
+  <a href="{{ url_for('public.index') }}" class="tab">Public Markets</a>
+  <a href="{{ url_for('vc.index') }}" class="tab active">Funding</a>
+</div>
+
+<div class="public-header">
+  <h1>Funding Finder</h1>
+  <p class="muted">Browse top venture capital firms. Filter by your stage and sector to find the right fit.</p>
+</div>
+
+<div class="thesis-section">
+  <h2 style="margin-bottom:8px;">AI Investor Match</h2>
+  <p class="muted" style="margin-bottom:12px;">Describe your startup and we'll recommend the best-fit investors and relevant news.</p>
+  <textarea id="thesis-input" class="thesis-textarea" placeholder="e.g. We're building a B2B SaaS platform that uses machine learning to help mid-market manufacturers reduce energy waste and comply with ESG reporting requirements..."></textarea>
+  <button id="thesis-btn" class="thesis-btn" onclick="runThesis()">Analyze My Thesis</button>
+  <div id="thesis-loading" class="thesis-loading" style="display:none;">Analyzing your thesis with AI&hellip;</div>
+  <div id="thesis-error" class="thesis-error" style="display:none;"></div>
+
+  <div id="thesis-results" style="display:none;">
+    <div class="thesis-feedback-box">
+      <strong>Thesis Feedback</strong>
+      <p id="thesis-feedback-text" style="margin-top:6px;"></p>
+    </div>
+
+    <div id="thesis-vcs-wrap">
+      <h3 class="thesis-sub-heading">Recommended Investors</h3>
+      <div id="thesis-vc-list" class="thesis-rec-grid"></div>
+    </div>
+
+    <div id="thesis-articles-wrap">
+      <h3 class="thesis-sub-heading">Relevant News</h3>
+      <div id="thesis-article-list" class="thesis-article-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="vc-filters">
+  <form method="get" action="{{ url_for('vc.index') }}" class="vc-filter-form">
+    <input
+      type="text"
+      name="q"
+      placeholder="Search by sector (e.g. Fintech, AI, Healthcare)..."
+      value="{{ q }}"
+      class="vc-search-input"
+    />
+    <div class="stage-filter-row">
+      <span class="filter-label">Stage:</span>
+      <a href="{{ url_for('vc.index', q=q) }}"
+         class="stage-btn {% if not stage_filter %}active{% endif %}">All</a>
+      {% for s in all_stages %}
+      <a href="{{ url_for('vc.index', stage=s, q=q) }}"
+         class="stage-btn {% if stage_filter == s %}active{% endif %}"
+         data-stage="{{ s }}">{{ s }}</a>
+      {% endfor %}
+    </div>
+    <button type="submit" class="vc-search-btn">Search</button>
+  </form>
+</div>
+
+<p class="muted" style="margin-bottom:16px;">
+  Showing {{ firms|length }} firm{% if firms|length != 1 %}s{% endif %}
+  {% if stage_filter %} &middot; Stage: <strong>{{ stage_filter }}</strong>{% endif %}
+  {% if q %} &middot; Sector: <strong>{{ q }}</strong>{% endif %}
+</p>
+
+<div class="vc-grid">
+  {% for f in firms %}
+  <div class="vc-card">
+    <div class="vc-card-top">
+      <a href="{{ url_for('vc.firm', firm_id=f.id) }}" class="vc-card-name">{{ f.name }}</a>
+      <span class="muted vc-city">{{ f.hq_city }}</span>
+    </div>
+
+    <p class="vc-description">{{ f.description }}</p>
+
+    <div class="vc-stages">
+      {% for s in f.stage_list %}
+      <span class="stage-tag" data-stage="{{ s }}">{{ s }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="vc-sectors">
+      {% for sector in f.sector_list[:4] %}
+      <span class="category-tag">{{ sector }}</span>
+      {% endfor %}
+      {% if f.sector_list|length > 4 %}
+      <span class="muted" style="font-size:11px;">+{{ f.sector_list|length - 4 }} more</span>
+      {% endif %}
+    </div>
+
+    <div class="vc-card-footer">
+      <span class="vc-check-range">
+        Check: {{ f.check_min_k | fmt_check_k }}
+        {% if f.check_max_k and f.check_max_k != f.check_min_k %}&ndash;{{ f.check_max_k | fmt_check_k }}{% endif %}
+      </span>
+      {% if f.aum_usd_bn %}
+      <span class="muted">AUM ${{ "%.0f"|format(f.aum_usd_bn) }}B</span>
+      {% endif %}
+    </div>
+
+    {% if f.portfolio_list %}
+    <div class="vc-portfolio">
+      <span class="muted" style="font-size:11px;">Portfolio: </span>
+      {% for co in f.portfolio_list[:4] %}
+      <span class="portfolio-chip">{{ co }}</span>
+      {% endfor %}
+      {% if f.portfolio_list|length > 4 %}
+      <span class="muted" style="font-size:11px;">+{{ f.portfolio_list|length - 4 }}</span>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="muted" style="grid-column:1/-1; margin-top:24px;">
+    No firms match your filters. <a href="{{ url_for('vc.index') }}">Clear filters</a>
+  </p>
+  {% endfor %}
+</div>
+
+<script>
+async function runThesis() {
+  const thesis = document.getElementById("thesis-input").value.trim();
+  if (!thesis) return;
+
+  const btn = document.getElementById("thesis-btn");
+  const loading = document.getElementById("thesis-loading");
+  const errEl = document.getElementById("thesis-error");
+  const results = document.getElementById("thesis-results");
+
+  btn.disabled = true;
+  loading.style.display = "block";
+  errEl.style.display = "none";
+  results.style.display = "none";
+
+  try {
+    const resp = await fetch("{{ url_for('vc.thesis') }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ thesis }),
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      errEl.textContent = data.error || "Something went wrong. Please try again.";
+      errEl.style.display = "block";
+      return;
+    }
+
+    document.getElementById("thesis-feedback-text").textContent = data.thesis_feedback;
+
+    const vcList = document.getElementById("thesis-vc-list");
+    vcList.innerHTML = "";
+    (data.vc_matches || []).forEach(vc => {
+      const card = document.createElement("div");
+      card.className = "thesis-rec-card";
+      const stages = (vc.stages || []).map(s =>
+        `<span class="stage-tag" data-stage="${s}">${s}</span>`
+      ).join("");
+      card.innerHTML = `
+        <div class="thesis-rec-top">
+          <a href="/vc/${vc.id}" class="thesis-rec-name">${vc.name}</a>
+          <span class="muted" style="font-size:12px;">${vc.hq_city || ""}</span>
+        </div>
+        <div class="vc-stages" style="margin:6px 0;">${stages}</div>
+        <p class="thesis-rec-reason">${vc.reason}</p>
+        ${vc.website ? `<a href="${vc.website}" target="_blank" rel="noopener" class="thesis-website-link">Visit website ↗</a>` : ""}
+      `;
+      vcList.appendChild(card);
+    });
+    document.getElementById("thesis-vcs-wrap").style.display =
+      data.vc_matches && data.vc_matches.length ? "block" : "none";
+
+    const artList = document.getElementById("thesis-article-list");
+    artList.innerHTML = "";
+    (data.article_matches || []).forEach(art => {
+      const item = document.createElement("div");
+      item.className = "thesis-article-item";
+      item.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+          <span class="source">${art.source || ""}</span>
+          ${art.category ? `<span class="category-tag">${art.category}</span>` : ""}
+        </div>
+        <a href="${art.url}" target="_blank" rel="noopener" class="thesis-article-title">${art.title}</a>
+        <p class="thesis-rec-reason">${art.reason}</p>
+      `;
+      artList.appendChild(item);
+    });
+    document.getElementById("thesis-articles-wrap").style.display =
+      data.article_matches && data.article_matches.length ? "block" : "none";
+
+    results.style.display = "block";
+    results.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    errEl.textContent = "Network error. Please try again.";
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    loading.style.display = "none";
+  }
+}
+</script>
+{% endblock %}

@@ -5,9 +5,15 @@ load_dotenv()
 
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "change-me-in-production")
+    SECRET_KEY = os.environ.get("SECRET_KEY")
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "postgresql://localhost/pulseboard")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Session configuration
+    SESSION_TYPE = "filesystem"
+    SESSION_PERMANENT = False
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = "Lax"
 
     # Auth0
     AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")

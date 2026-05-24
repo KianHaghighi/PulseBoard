@@ -124,7 +124,141 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #eee; }
 th { background: #f5f7fa; font-weight: 600; }
 
+/* VC Funding Finder */
+.vc-filters { margin-bottom: 20px; }
+.vc-filter-form { display: flex; flex-direction: column; gap: 10px; }
+.vc-search-input {
+  width: 100%; padding: 9px 14px; border: 1px solid #ddd; border-radius: 6px;
+  font-size: 14px;
+}
+.vc-search-btn {
+  align-self: flex-start; padding: 8px 20px; background: #1a1a2e; color: #fff;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 14px;
+}
+.stage-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.filter-label { font-size: 13px; color: #555; font-weight: 500; margin-right: 4px; }
+.stage-btn {
+  padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  color: #555; background: #f0f0f0; text-decoration: none; border: 1px solid transparent;
+  transition: background 0.15s;
+}
+.stage-btn:hover { background: #e0e0e0; color: #1a1a2e; }
+.stage-btn.active { background: #1a1a2e; color: #fff; }
+
+.vc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+}
+.vc-card {
+  background: #fff; border-radius: 8px; padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07); display: flex; flex-direction: column; gap: 10px;
+}
+.vc-card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.vc-card-name { font-size: 15px; font-weight: 700; color: #1a1a2e; text-decoration: none; }
+.vc-card-name:hover { color: #0066cc; }
+.vc-city { font-size: 12px; white-space: nowrap; }
+.vc-description { font-size: 13px; color: #555; line-height: 1.5; margin: 0; }
+.vc-stages { display: flex; flex-wrap: wrap; gap: 5px; }
+.vc-sectors { display: flex; flex-wrap: wrap; gap: 5px; }
+.vc-card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.vc-check-range { font-weight: 600; color: #1a1a2e; }
+.vc-portfolio { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+
+.stage-tag {
+  display: inline-block; padding: 2px 9px; border-radius: 10px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+  background: #f0f0f0; color: #555;
+}
+.stage-tag[data-stage="Pre-seed"] { background: #f3e8ff; color: #7c3aed; }
+.stage-tag[data-stage="Seed"]     { background: #dbeafe; color: #1d4ed8; }
+.stage-tag[data-stage="Series A"] { background: #dcfce7; color: #15803d; }
+.stage-tag[data-stage="Series B"] { background: #ccfbf1; color: #0f766e; }
+.stage-tag[data-stage="Series C"] { background: #fff7ed; color: #c2410c; }
+.stage-tag[data-stage="Growth"]   { background: #fee2e2; color: #b91c1c; }
+
+.portfolio-chip {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  background: #f5f7fa; border: 1px solid #e5e7eb;
+  font-size: 11px; color: #444;
+}
+.portfolio-chip-lg { font-size: 13px; padding: 4px 12px; }
+
+.vc-detail-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 16px;
+}
+.vc-detail-header h1 { margin-bottom: 4px; }
+
+.vc-stat-grid {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  background: #f5f7fa; border-radius: 8px; padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.vc-stat { min-width: 160px; }
+.vc-stat-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; display: block; }
+.vc-stat-value { font-size: 18px; font-weight: 700; color: #1a1a2e; display: block; margin-top: 6px; }
+
+/* AI Thesis Section */
+.thesis-section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border: 1px solid #e5e7eb;
+}
+.thesis-textarea {
+  width: 100%; min-height: 90px; padding: 10px 14px;
+  border: 1px solid #ddd; border-radius: 6px; font-size: 14px;
+  resize: vertical; font-family: inherit; line-height: 1.5;
+  margin-bottom: 10px; display: block;
+}
+.thesis-textarea:focus { outline: none; border-color: #0066cc; }
+.thesis-btn {
+  padding: 9px 22px; background: #1a1a2e; color: #fff;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 14px;
+  font-weight: 500;
+}
+.thesis-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.thesis-loading { margin-top: 12px; font-size: 14px; color: #555; font-style: italic; }
+.thesis-error { margin-top: 12px; font-size: 14px; color: #c62828; background: #fce8e6; padding: 8px 12px; border-radius: 6px; }
+
+.thesis-feedback-box {
+  margin-top: 20px; background: #f0f4ff; border-left: 3px solid #0066cc;
+  padding: 12px 16px; border-radius: 4px; font-size: 14px; color: #333;
+}
+.thesis-sub-heading { font-size: 15px; font-weight: 600; margin: 20px 0 10px; color: #1a1a2e; }
+
+.thesis-rec-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;
+}
+.thesis-rec-card {
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 14px 16px;
+}
+.thesis-rec-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.thesis-rec-name { font-weight: 700; color: #1a1a2e; text-decoration: none; font-size: 14px; }
+.thesis-rec-name:hover { color: #0066cc; }
+.thesis-rec-reason { font-size: 13px; color: #555; margin: 6px 0 4px; line-height: 1.5; }
+.thesis-website-link { font-size: 12px; color: #0066cc; text-decoration: none; }
+.thesis-website-link:hover { text-decoration: underline; }
+
+.thesis-article-list { display: flex; flex-direction: column; gap: 10px; }
+.thesis-article-item {
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 12px 14px;
+}
+.thesis-article-title {
+  display: block; font-weight: 600; font-size: 14px; color: #1a1a2e;
+  text-decoration: none; margin-bottom: 4px;
+}
+.thesis-article-title:hover { color: #0066cc; }
+
 @media (max-width: 600px) {
   .search-bar { flex-direction: column; }
   .article-actions { gap: 6px; }
+  .vc-grid { grid-template-columns: 1fr; }
+  .vc-detail-header { flex-direction: column; gap: 8px; }
 }

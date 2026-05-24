@@ -111,3 +111,32 @@ class FinancialSnapshot(db.Model):
     cash = db.Column(db.BigInteger)
 
     __table_args__ = (db.UniqueConstraint("company_id", "period_end", "period_type"),)
+
+
+class VCFirm(db.Model):
+    __tablename__ = "vc_firms"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False, unique=True)
+    description = db.Column(db.Text)
+    website = db.Column(db.String(512))
+    hq_city = db.Column(db.String(128))
+    founded_year = db.Column(db.Integer)
+    focus_sectors = db.Column(db.Text)    # comma-separated
+    stages = db.Column(db.Text)           # comma-separated
+    check_min_k = db.Column(db.Integer)   # in $K
+    check_max_k = db.Column(db.Integer)   # in $K
+    aum_usd_bn = db.Column(db.Float)
+    notable_portfolio = db.Column(db.Text)  # comma-separated
+
+    @property
+    def stage_list(self):
+        return [s.strip() for s in (self.stages or "").split(",") if s.strip()]
+
+    @property
+    def sector_list(self):
+        return [s.strip() for s in (self.focus_sectors or "").split(",") if s.strip()]
+
+    @property
+    def portfolio_list(self):
+        return [s.strip() for s in (self.notable_portfolio or "").split(",") if s.strip()]
