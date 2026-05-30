@@ -93,6 +93,10 @@ class PublicCompany(db.Model):
         "FinancialSnapshot", backref="company", lazy="dynamic",
         cascade="all, delete-orphan",
     )
+    job_counts = db.relationship(
+        "JobPostingCount", backref="public_company", lazy="dynamic",
+        foreign_keys="JobPostingCount.public_company_id",
+    )
 
 
 class FinancialSnapshot(db.Model):
@@ -111,6 +115,20 @@ class FinancialSnapshot(db.Model):
     cash = db.Column(db.BigInteger)
 
     __table_args__ = (db.UniqueConstraint("company_id", "period_end", "period_type"),)
+
+
+class JobPostingCount(db.Model):
+    __tablename__ = "job_posting_counts"
+
+    id                = db.Column(db.Integer, primary_key=True)
+    company_name      = db.Column(db.String(255), nullable=False, index=True)
+    public_company_id = db.Column(db.Integer, db.ForeignKey("public_companies.id"), nullable=True)
+    snapshot_date     = db.Column(db.Date, nullable=False)
+    posting_count     = db.Column(db.Integer, nullable=False)
+    ats_type          = db.Column(db.String(20), nullable=False)
+    ats_slug          = db.Column(db.String(128), nullable=False)
+
+    __table_args__ = (db.UniqueConstraint("company_name", "snapshot_date"),)
 
 
 class VCFirm(db.Model):

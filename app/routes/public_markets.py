@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, abort, jsonify
 from flask_login import current_user
-from ..models.models import PublicCompany, FinancialSnapshot
+from ..models.models import PublicCompany, FinancialSnapshot, JobPostingCount
+from ..services.jobs import get_latest_count, get_mom_change
 
 public_bp = Blueprint("public", __name__)
 
@@ -51,7 +52,14 @@ def index():
         yoy = None
         if latest and prev and prev.revenue:
             yoy = (latest.revenue - prev.revenue) / prev.revenue * 100
-        summaries.append({"company": c, "latest": latest, "yoy": yoy})
+        job_snap = get_latest_count(c.name)
+        summaries.append({
+            "company": c,
+            "latest": latest,
+            "yoy": yoy,
+            "job_snap": job_snap,
+            "job_mom": get_mom_change(c.name) if job_snap else None,
+        })
     return render_template("public/index.html", summaries=summaries)
 
 
@@ -66,7 +74,17 @@ def company(company_id):
                  .filter_by(company_id=c.id, period_type="quarterly")
                  .order_by(FinancialSnapshot.period_end.desc())
                  .limit(8).all())
-    return render_template("public/company.html", company=c, annual=annual, quarterly=quarterly)
+    job_history = (JobPostingCount.query
+                   .filter_by(company_name=c.name)
+                   .order_by(JobPostingCount.snapshot_date.desc())
+                   .limit(30).all())
+    job_latest = job_history[0] if job_history else None
+    job_mom = get_mom_change(c.name) if job_latest else None
+    return render_template(
+        "public/company.html",
+        company=c, annual=annual, quarterly=quarterly,
+        job_history=job_history, job_latest=job_latest, job_mom=job_mom,
+    )
 
 
 @public_bp.route("/refresh", methods=["POST"])

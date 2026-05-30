@@ -57,10 +57,19 @@ def _start_scheduler(app):
             from .services.edgar import refresh_all
             refresh_all()
 
+    def run_jobs_refresh():
+        with app.app_context():
+            from .services.jobs import refresh_all_jobs
+            refresh_all_jobs()
+
     scheduler = BackgroundScheduler()
     scheduler.add_job(run_ingest, "interval", minutes=30, id="ingest")
     scheduler.add_job(
         run_edgar_refresh, "interval", hours=24, id="edgar_refresh",
+        next_run_time=datetime.now(timezone.utc),
+    )
+    scheduler.add_job(
+        run_jobs_refresh, "interval", hours=24, id="jobs_refresh",
         next_run_time=datetime.now(timezone.utc),
     )
     scheduler.start()

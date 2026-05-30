@@ -262,3 +262,16 @@ th { background: #f5f7fa; font-weight: 600; }
   .vc-grid { grid-template-columns: 1fr; }
   .vc-detail-header { flex-direction: column; gap: 8px; }
 }
+
+.job-count { font-weight: 600; color: #1a1a2e; }
+.job-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #e8f0fe;
+  color: #0066cc;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+}

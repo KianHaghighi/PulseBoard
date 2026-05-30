@@ -84,5 +84,47 @@
 <p class="muted" style="margin-top:24px;">No financial data yet. Trigger a refresh from the admin panel.</p>
 {% endif %}
 
+{% if job_latest %}
+<h2 style="margin-top:32px;">Job Postings</h2>
+<div class="vc-stat-grid" style="margin-bottom:20px;">
+  <div class="vc-stat">
+    <span class="vc-stat-label">Open Roles</span>
+    <span class="vc-stat-value">{{ job_latest.posting_count }}</span>
+  </div>
+  {% if job_mom is not none %}
+  <div class="vc-stat">
+    <span class="vc-stat-label">MoM Change</span>
+    <span class="vc-stat-value {{ 'positive' if job_mom > 0 else 'negative' if job_mom < 0 else '' }}">{{ job_mom | fmt_pct }}</span>
+  </div>
+  {% endif %}
+  <div class="vc-stat">
+    <span class="vc-stat-label">Source</span>
+    <span class="vc-stat-value" style="font-size:14px; text-transform:capitalize;">{{ job_latest.ats_type }}</span>
+  </div>
+  <div class="vc-stat">
+    <span class="vc-stat-label">As of</span>
+    <span class="vc-stat-value" style="font-size:14px;">{{ job_latest.snapshot_date.strftime('%b %d, %Y') }}</span>
+  </div>
+</div>
+{% if job_history | length > 1 %}
+<table class="financials-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Open Roles</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for jc in job_history %}
+    <tr>
+      <td class="muted">{{ jc.snapshot_date.strftime('%b %d, %Y') }}</td>
+      <td>{{ jc.posting_count }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+
 <p style="margin-top:24px;"><a href="{{ url_for('public.index') }}">&larr; Back to Public Markets</a></p>
 {% endblock %}

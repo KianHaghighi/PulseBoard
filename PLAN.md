@@ -1,7 +1,7 @@
 # PulseBoard — Development Plan
 
 > Market Research & Startup Intelligence Platform  
-> Based on PRD v0.2 | Updated 2026-04-25
+> Based on PRD v0.2 | Updated 2026-05-30
 
 ---
 
@@ -14,8 +14,10 @@
 | Database | PostgreSQL + SQLAlchemy |
 | Auth | Auth0 (authlib) |
 | News ingestion | feedparser (RSS) + NewsAPI |
-| AI summarization | Anthropic Claude (Haiku) |
+| AI summarization / tagging | Anthropic Claude (Haiku 4.5) |
 | Email digest | SendGrid |
+| Job data | ATS scraping via `jobs.py` |
+| SEC filings | EDGAR API via `edgar.py` |
 | Hosting | TBD — Render / Railway / DigitalOcean |
 
 ---
@@ -34,7 +36,7 @@
 - [x] `.env.example` and `.gitignore`
 - [x] Wire `init_oauth()` into app factory (`app/__init__.py`)
 - [x] Add APScheduler — `_start_scheduler()` runs ingestion every 30 min (`app/__init__.py`)
-- [x] Populate `requirements.txt` with all deps (added `apscheduler==3.10.4`)
+- [x] Populate `requirements.txt` with all deps
 
 ### Week 3–4: Feed UI, Filtering, Search, Like/Dislike
 
@@ -42,8 +44,9 @@
 - [x] Like/dislike endpoint with toggle logic (`/like/<id>`)
 - [x] Save-to-collection endpoint (`/save/<id>`)
 - [x] Base template + feed template (`app/templates/`)
-- [ ] Article category auto-tagging (category field exists on model, not yet populated by ingestion)
-- [ ] Keyword filtering by user's saved keywords (use `current_user.keywords` in feed query)
+- [x] Article category auto-tagging via Claude Haiku (`tag_category()` in `app/services/summarizer.py`) — called during both RSS and NewsAPI ingestion; categories: AI & ML, Funding, Startups, Enterprise, Crypto & Web3, Policy, Science, Other
+- [x] Keyword-based "For You" feed sort — filters articles by `current_user.keywords` (`app/routes/feed.py`)
+- [x] Guest access — feed browsable without login; like/save/summarize require auth
 
 ### Week 5–6: Bookmarking, Collections, AI Summaries
 
@@ -70,14 +73,51 @@
 
 ---
 
+## Phase 1.5 — Public Markets Tab (Complete)
+
+> Added after MVP scope. Surfaces SEC financial data and job-posting signals for public tech companies.
+
+- [x] `PublicCompany` model — ticker, CIK, sector, last-refreshed timestamp (`app/models/models.py`)
+- [x] `FinancialSnapshot` model — annual + quarterly revenue, net income, EPS, assets, cash (`app/models/models.py`)
+- [x] `JobPostingCount` model — daily ATS snapshot per company; linked to `PublicCompany` or standalone by name (`app/models/models.py`)
+- [x] EDGAR service: `seed_companies()`, `refresh_all()` — fetches SEC XBRL financials (`app/services/edgar.py`)
+- [x] Jobs service: `get_latest_count()`, `get_mom_change()`, `refresh_all_jobs()` — scrapes ATS job boards (`app/services/jobs.py`)
+- [x] APScheduler jobs for 24 h EDGAR refresh and 24 h jobs refresh (`app/__init__.py`)
+- [x] Public Markets blueprint at `/public` (`app/routes/public_markets.py`)
+  - Index: company table with latest revenue, YoY growth %, job count, MoM job change
+  - Company detail: annual (4 yr) + quarterly (8 qtr) financial history + 30-day job posting chart
+  - `/refresh` POST: paid-users-only manual EDGAR trigger
+- [x] Template filters: `fmt_money`, `fmt_eps`, `fmt_pct`
+- [x] Templates: `app/templates/public/index.html`, `app/templates/public/company.html`
+
+---
+
+## Phase 1.5 — VC Funding Finder Tab (Complete)
+
+> Added after MVP scope. Helps founders discover matching VC firms via AI thesis analysis.
+
+- [x] `VCFirm` model — name, description, website, HQ city, founded year, focus sectors, stages, check range ($K), AUM, notable portfolio (`app/models/models.py`)
+- [x] VC seed data: 25 major firms (YC, a16z, Sequoia, Benchmark, Accel, etc.) auto-loaded on startup (`app/services/vc_data.py`)
+- [x] VC blueprint at `/vc` (`app/routes/vc.py`)
+  - Index: browseable firm list with stage and keyword filters
+  - Firm detail: firm profile + live job count for each portfolio company
+  - `/thesis` POST: AI-powered thesis matching endpoint
+- [x] Thesis analysis service (`app/services/thesis.py`) — sends founder thesis to Claude, returns ranked VC matches with reasoning + relevant article matches
+- [x] Template filter: `fmt_check_k` (formats $K values as $K / $M)
+- [x] Template: `app/templates/vc/firm.html`
+
+---
+
 ## Phase 2 — Growth (Weeks 9–16)
 
 - [ ] Keyword alerts — email user when new article matches saved keyword
 - [ ] Team workspaces — shared collections across multiple users
 - [ ] Export to CSV / PDF
 - [ ] Trending topics analytics dashboard
-- [ ] Paid tier — gate AI summaries behind `user.is_paid` flag
+- [ ] Paid tier — gate AI summaries behind `user.is_paid` flag (EDGAR refresh already gated)
 - [ ] Redis caching for feed queries (mitigate NewsAPI rate limits)
+- [ ] More public companies — expand EDGAR seed list beyond current set
+- [ ] Historical job-posting chart UI on company detail page
 
 ---
 
@@ -89,23 +129,34 @@ new_proj/
 ├── requirements.txt
 ├── .env.example
 ├── app/
-│   ├── __init__.py               # App factory
+│   ├── __init__.py               # App factory + APScheduler (ingest 30 min, EDGAR/jobs 24 h)
 │   ├── config.py                 # Env-based config
 │   ├── extensions.py             # db, login_manager
 │   ├── models/
-│   │   └── models.py             # User, Article, Like, Collection, CollectionItem
+│   │   └── models.py             # User, Article, Like, Collection, CollectionItem,
+│   │                             # PublicCompany, FinancialSnapshot, JobPostingCount, VCFirm
 │   ├── routes/
 │   │   ├── feed.py               # /, /like, /save, /summarize
 │   │   ├── auth.py               # /auth/login, /callback, /logout
-│   │   ├── profile.py            # /profile/ — needs implementation
-│   │   └── admin.py              # /admin/ — needs implementation
+│   │   ├── profile.py            # /profile/ — stub
+│   │   ├── admin.py              # /admin/ — stub
+│   │   ├── public_markets.py     # /public/, /public/<id>, /public/refresh
+│   │   └── vc.py                 # /vc/, /vc/<id>, /vc/thesis
 │   ├── services/
-│   │   ├── ingestion.py          # ingest_rss(), ingest_newsapi()
-│   │   ├── summarizer.py         # summarize_article() via Anthropic
-│   │   └── digest.py             # send_daily_digest() via SendGrid
+│   │   ├── ingestion.py          # ingest_rss(), ingest_newsapi() — both call tag_category()
+│   │   ├── summarizer.py         # summarize_article() + tag_category() via Claude Haiku
+│   │   ├── digest.py             # send_daily_digest() via SendGrid
+│   │   ├── edgar.py              # seed_companies(), refresh_all() via SEC EDGAR
+│   │   ├── jobs.py               # get_latest_count(), get_mom_change(), refresh_all_jobs()
+│   │   ├── thesis.py             # analyze_thesis() — Claude-powered VC matching
+│   │   └── vc_data.py            # seed_vc_firms() — 25 firm seed dataset
 │   ├── templates/
 │   │   ├── base.html
 │   │   ├── feed/index.html
+│   │   ├── public/index.html     # Public markets table
+│   │   ├── public/company.html   # Company financial + job detail
+│   │   ├── vc/index.html         # VC firm browser
+│   │   ├── vc/firm.html          # Firm profile + AI thesis matcher
 │   │   ├── profile/{index,settings,collection}.html
 │   │   ├── admin/index.html
 │   │   └── email/digest.html
@@ -136,17 +187,8 @@ MAIL_FROM=digest@pulseboard.io
 
 ## Immediate Next Steps
 
-1. Fix `init_oauth()` — call it inside `create_app()` in `app/__init__.py`
-2. Implement `app/routes/profile.py` — settings (keywords, digest toggle) + collections view
-3. Implement `app/routes/admin.py` — user list + manual ingest trigger
-4. Add article category tagging in `ingest_rss()` / `ingest_newsapi()`
-5. Add a scheduler (APScheduler) for ingestion and digest
-6. End-to-end test with real credentials
-
----
-
-## Open Questions
-
-- Deployment target: Render/Railway (simpler) vs DigitalOcean VPS (more control)?
-- Free tier scope: gate AI summaries behind paid plan, or allow N free/day?
-- Add Redis now for caching, or defer to Phase 2?
+1. Implement `app/routes/profile.py` — settings (keywords, digest toggle) + collections view
+2. Implement `app/routes/admin.py` — user list + manual ingest trigger
+3. Add nightly APScheduler job for `send_daily_digest()`
+4. User settings page: save keywords, toggle digest on/off
+5. End-to-end test with real credentials + live DB

@@ -39,8 +39,14 @@ def index():
 
 @vc_bp.route("/<int:firm_id>")
 def firm(firm_id):
+    from ..services.jobs import get_latest_count
     f = VCFirm.query.get_or_404(firm_id)
-    return render_template("vc/firm.html", firm=f)
+    portfolio_jobs = {}
+    for co_name in f.portfolio_list:
+        snap = get_latest_count(co_name)
+        if snap:
+            portfolio_jobs[co_name] = snap.posting_count
+    return render_template("vc/firm.html", firm=f, portfolio_jobs=portfolio_jobs)
 
 
 @vc_bp.route("/thesis", methods=["POST"])

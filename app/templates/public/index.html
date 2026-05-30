@@ -22,6 +22,7 @@
       <th>Revenue (Annual)</th>
       <th>Net Income</th>
       <th>YoY Growth</th>
+      <th>Open Roles</th>
       <th>Last Updated</th>
     </tr>
   </thead>
@@ -37,6 +38,16 @@
       </td>
       <td class="{{ 'positive' if s.yoy and s.yoy > 0 else 'negative' if s.yoy and s.yoy < 0 else '' }}">
         {{ s.yoy | fmt_pct if s.yoy is not none else '—' }}
+      </td>
+      <td>
+        {% if s.job_snap %}
+          <span class="job-count">{{ s.job_snap.posting_count }}</span>
+          {% if s.job_mom is not none %}
+            <span class="{{ 'positive' if s.job_mom > 0 else 'negative' if s.job_mom < 0 else 'muted' }}" style="font-size:11px; margin-left:4px;">{{ s.job_mom | fmt_pct }}</span>
+          {% endif %}
+        {% else %}
+          <span class="muted">—</span>
+        {% endif %}
       </td>
       <td class="muted">{{ s.company.last_refreshed_at.strftime('%b %d, %Y') if s.company.last_refreshed_at else 'Never' }}</td>
     </tr>

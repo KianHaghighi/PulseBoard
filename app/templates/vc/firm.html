@@ -57,7 +57,9 @@
 <h2>Notable Portfolio</h2>
 <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:28px;">
   {% for co in firm.portfolio_list %}
-  <span class="portfolio-chip portfolio-chip-lg">{{ co }}</span>
+  <span class="portfolio-chip portfolio-chip-lg">
+    {{ co }}{% if co in portfolio_jobs %}<span class="job-badge">{{ portfolio_jobs[co] }} jobs</span>{% endif %}
+  </span>
   {% endfor %}
 </div>
 {% endif %}
