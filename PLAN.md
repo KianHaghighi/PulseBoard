@@ -55,19 +55,19 @@
 - [x] AI summarization via Anthropic Claude Haiku (`app/services/summarizer.py`)
 - [x] On-demand summarize endpoint (`/summarize/<id>`)
 - [x] Profile / collection view templates
-- [ ] Profile route: view collections, manage keywords, toggle digest (`app/routes/profile.py` — stub exists)
-- [ ] Create / delete collection UI
-- [ ] Remove article from collection
+- [x] Profile route: view collections, manage keywords, toggle digest (`app/routes/profile.py`)
+- [x] Create / delete collection UI
+- [x] Remove article from collection
 
 ### Week 7–8: Email Digest, Admin Panel, Polish, Beta
 
 - [x] Daily digest service with SendGrid (`app/services/digest.py`)
 - [x] Digest email template (`app/templates/email/digest.html`)
 - [x] Admin blueprint registered
-- [ ] Admin route: list users, trigger manual ingest, view article count (`app/routes/admin.py` — stub exists)
-- [ ] Scheduler to fire `send_daily_digest()` nightly
-- [ ] User settings page: save keywords, toggle digest on/off
-- [ ] Mobile-responsive CSS pass
+- [x] Admin route: list users, trigger manual ingest, view article count (`app/routes/admin.py`)
+- [x] Scheduler to fire `send_daily_digest()` nightly (cron: 08:00 UTC)
+- [x] User settings page: save keywords, toggle digest on/off
+- [x] Mobile-responsive CSS pass
 - [ ] `run.py` working end-to-end with a real DB connection
 - [ ] Beta test with real Auth0 credentials + live DB
 
@@ -187,8 +187,5 @@ MAIL_FROM=digest@pulseboard.io
 
 ## Immediate Next Steps
 
-1. Implement `app/routes/profile.py` — settings (keywords, digest toggle) + collections view
-2. Implement `app/routes/admin.py` — user list + manual ingest trigger
-3. Add nightly APScheduler job for `send_daily_digest()`
-4. User settings page: save keywords, toggle digest on/off
-5. End-to-end test with real credentials + live DB
+1. End-to-end test with real Auth0 credentials + live PostgreSQL DB
+2. Beta test with real users

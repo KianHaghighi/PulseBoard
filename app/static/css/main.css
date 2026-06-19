@@ -136,6 +136,7 @@ th { background: #f5f7fa; font-weight: 600; }
   border: none; border-radius: 6px; cursor: pointer; font-size: 14px;
 }
 .stage-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.source-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 12px 0 16px; }
 .filter-label { font-size: 13px; color: #555; font-weight: 500; margin-right: 4px; }
 .stage-btn {
   padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
@@ -256,11 +257,84 @@ th { background: #f5f7fa; font-weight: 600; }
 }
 .thesis-article-title:hover { color: #0066cc; }
 
-@media (max-width: 600px) {
-  .search-bar { flex-direction: column; }
-  .article-actions { gap: 6px; }
+@media (max-width: 768px) {
   .vc-grid { grid-template-columns: 1fr; }
+  .thesis-rec-grid { grid-template-columns: 1fr; }
+  .financials-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .financials-table th,
+  .financials-table td { white-space: nowrap; }
+}
+
+@media (max-width: 600px) {
+  /* Navbar */
+  .navbar {
+    flex-direction: column;
+    height: auto;
+    padding: 12px 16px;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+  .nav-links a { margin-left: 0; }
+
+  /* Layout */
+  .container { margin: 16px auto; padding: 0 12px; }
+  h1 { font-size: 19px; margin-bottom: 16px; }
+
+  /* Tabs — scroll horizontally instead of wrapping */
+  .market-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    margin-bottom: 20px;
+  }
+  .market-tabs::-webkit-scrollbar { display: none; }
+  .tab { white-space: nowrap; padding: 8px 14px; }
+
+  /* Source filter */
+  .source-filter-row {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .source-filter-row::-webkit-scrollbar { display: none; }
+
+  /* Feed search */
+  .search-bar { flex-direction: column; }
+  .search-bar select { width: 100%; }
+  .search-bar button { width: 100%; }
+
+  /* Article actions */
+  .article-actions { gap: 6px; }
+  .article-actions select { flex: 1; min-width: 0; }
+
+  /* Article card */
+  .article-card { padding: 14px; }
+
+  /* VC */
   .vc-detail-header { flex-direction: column; gap: 8px; }
+  .vc-stat-grid { gap: 12px; padding: 12px 16px; }
+  .vc-stat { min-width: 110px; }
+  .vc-stat-value { font-size: 15px; }
+  .thesis-section { padding: 16px; }
+  .stage-filter-row { gap: 4px; }
+
+  /* Profile */
+  .inline-form { flex-direction: column; }
+  .inline-form input,
+  .inline-form button { width: 100%; }
+  .collection-list li { flex-wrap: wrap; gap: 8px; }
+
+  /* Forms */
+  .form-group input[type="text"] { font-size: 16px; }
 }
 
 .job-count { font-weight: 600; color: #1a1a2e; }

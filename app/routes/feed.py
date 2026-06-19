@@ -12,7 +12,17 @@ def index():
     page = request.args.get("page", 1, type=int)
     query = request.args.get("q", "").strip()
     category = request.args.get("category", "").strip()
+    source = request.args.get("source", "").strip()
     sort = request.args.get("sort", "recent")
+
+    all_sources = (
+        db.session.query(Article.source)
+        .filter(Article.source.isnot(None), Article.source != "")
+        .distinct()
+        .order_by(Article.source)
+        .all()
+    )
+    all_sources = [row[0] for row in all_sources]
 
     articles_q = Article.query
 
@@ -22,6 +32,8 @@ def index():
         )
     if category:
         articles_q = articles_q.filter(Article.category == category)
+    if source:
+        articles_q = articles_q.filter(Article.source == source)
 
     user_keywords = []
     if current_user.is_authenticated:
@@ -56,8 +68,10 @@ def index():
         collections=collections,
         query=query,
         category=category,
+        source=source,
         sort=sort,
         user_keywords=user_keywords,
+        all_sources=all_sources,
     )
 
 

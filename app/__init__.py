@@ -38,7 +38,8 @@ def create_app(config=Config):
         seed_companies()
         seed_vc_firms()
 
-    _start_scheduler(app)
+    if not app.config.get("TESTING"):
+        _start_scheduler(app)
 
     return app
 
@@ -62,6 +63,11 @@ def _start_scheduler(app):
             from .services.jobs import refresh_all_jobs
             refresh_all_jobs()
 
+    def run_digest():
+        with app.app_context():
+            from .services.digest import send_daily_digest
+            send_daily_digest()
+
     scheduler = BackgroundScheduler()
     scheduler.add_job(run_ingest, "interval", minutes=30, id="ingest")
     scheduler.add_job(
@@ -72,4 +78,5 @@ def _start_scheduler(app):
         run_jobs_refresh, "interval", hours=24, id="jobs_refresh",
         next_run_time=datetime.now(timezone.utc),
     )
+    scheduler.add_job(run_digest, "cron", hour=8, minute=0, id="daily_digest")
     scheduler.start()

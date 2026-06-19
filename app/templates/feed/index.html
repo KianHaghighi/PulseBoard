@@ -10,6 +10,7 @@
 
 <div class="feed-header">
   <form class="search-bar" method="get" action="{{ url_for('feed.index') }}">
+    <input type="hidden" name="source" value="{{ source }}" />
     <input type="text" name="q" placeholder="Search articles..." value="{{ query }}" />
     <select name="sort">
       <option value="recent" {% if sort == 'recent' %}selected{% endif %}>Recent</option>
@@ -19,6 +20,18 @@
     <button type="submit">Search</button>
   </form>
 </div>
+
+{% if all_sources %}
+<div class="source-filter-row">
+  <span class="filter-label">Source:</span>
+  <a href="{{ url_for('feed.index', q=query, sort=sort, category=category) }}"
+     class="stage-btn {% if not source %}active{% endif %}">All</a>
+  {% for s in all_sources %}
+  <a href="{{ url_for('feed.index', q=query, sort=sort, category=category, source=s) }}"
+     class="stage-btn {% if source == s %}active{% endif %}">{{ s }}</a>
+  {% endfor %}
+</div>
+{% endif %}
 
 {% if sort == 'for_you' and not user_keywords %}
 <div class="for-you-empty">
@@ -75,11 +88,11 @@
 {% if articles.pages > 1 %}
 <div class="pagination">
   {% if articles.has_prev %}
-    <a href="{{ url_for('feed.index', page=articles.prev_num, q=query, sort=sort, category=category) }}">&laquo; Prev</a>
+    <a href="{{ url_for('feed.index', page=articles.prev_num, q=query, sort=sort, category=category, source=source) }}">&laquo; Prev</a>
   {% endif %}
   <span>Page {{ articles.page }} of {{ articles.pages }}</span>
   {% if articles.has_next %}
-    <a href="{{ url_for('feed.index', page=articles.next_num, q=query, sort=sort, category=category) }}">Next &raquo;</a>
+    <a href="{{ url_for('feed.index', page=articles.next_num, q=query, sort=sort, category=category, source=source) }}">Next &raquo;</a>
   {% endif %}
 </div>
 {% endif %}

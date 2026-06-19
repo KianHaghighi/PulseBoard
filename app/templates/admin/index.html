@@ -8,6 +8,28 @@
   <span>Articles: <strong>{{ article_count }}</strong></span>
 </div>
 
+<form method="post" action="{{ url_for('admin.trigger_ingest') }}" style="margin-bottom: 24px;">
+  <button type="submit">Run Ingestion Now</button>
+</form>
+
+<h2>Users</h2>
+<table>
+  <thead>
+    <tr><th>Email</th><th>Name</th><th>Paid</th><th>Digest</th><th>Joined</th></tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.email }}</td>
+      <td>{{ user.name or '—' }}</td>
+      <td>{{ 'Yes' if user.is_paid else 'No' }}</td>
+      <td>{{ 'On' if user.digest_enabled else 'Off' }}</td>
+      <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
 <h2>Recent Articles</h2>
 <table>
   <thead>

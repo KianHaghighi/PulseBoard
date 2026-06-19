@@ -25,7 +25,26 @@ def index():
     user_count = User.query.count()
     article_count = Article.query.count()
     recent_articles = Article.query.order_by(Article.created_at.desc()).limit(20).all()
-    return render_template("admin/index.html", user_count=user_count, article_count=article_count, recent_articles=recent_articles)
+    users = User.query.order_by(User.created_at.desc()).all()
+    return render_template(
+        "admin/index.html",
+        user_count=user_count,
+        article_count=article_count,
+        recent_articles=recent_articles,
+        users=users,
+    )
+
+
+@admin_bp.route("/ingest", methods=["POST"])
+@login_required
+@admin_required
+def trigger_ingest():
+    from ..services.ingestion import ingest_rss, ingest_newsapi
+    from flask import flash
+    ingest_rss()
+    ingest_newsapi()
+    flash("Ingestion triggered successfully.", "success")
+    return redirect(url_for("admin.index"))
 
 
 @admin_bp.route("/articles/<int:article_id>/delete", methods=["POST"])
