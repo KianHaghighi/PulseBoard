@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Portfolio Workspace — PulseBoard{% endblock %}
+
+{% block content %}
+<div class="public-header">
+  <h1>Portfolio Workspace</h1>
+  <p class="muted">Track holdings and analyze investment theses across public and private markets.</p>
+</div>
+
+<!-- Tabs -->
+<div class="market-tabs">
+  <a class="tab active" href="#holdings" onclick="switchTab(event,'holdings')">Holdings</a>
+  <a class="tab" href="#analyses" onclick="switchTab(event,'analyses')">Valuation Models</a>
+</div>
+
+<!-- ═══════════════ HOLDINGS TAB ═══════════════ -->
+<div id="tab-holdings">
+
+  {% if current_user.is_authenticated %}
+  <div class="portfolio-upload-card">
+    <div class="portfolio-upload-header">
+      <h2>Import Portfolio Holdings</h2>
+      <a href="{{ url_for('portfolio.download_template') }}" class="template-link">Download template (.xlsx)</a>
+    </div>
+    <p class="muted" style="font-size:13px; margin-bottom:16px;">
+      One row per position. Columns: <em>Company Name, Ticker, Sector, Investment Type,
+      Shares, Cost Per Share, Investment Date, Private Valuation ($), Notes.</em>
+      Leave <em>Ticker</em> blank for private companies — live prices require a ticker.
+    </p>
+    <form method="post" action="{{ url_for('portfolio.upload') }}" enctype="multipart/form-data">
+      <div class="portfolio-upload-row">
+        <div class="form-group" style="flex:1; min-width:180px;">
+          <label>Portfolio Name <span class="muted">(optional)</span></label>
+          <input type="text" name="portfolio_name" placeholder="e.g. Q2 2025 Positions" />
+        </div>
+        <div class="form-group" style="flex:1.5; min-width:220px;">
+          <label>Excel File (.xlsx)</label>
+          <input type="file" name="excel_file" accept=".xlsx" class="file-input" required />
+        </div>
+        <div class="form-group" style="align-self:flex-end;">
+          <button type="submit" style="white-space:nowrap;">Import Holdings</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {% if portfolios %}
+  <h2>Your Portfolios</h2>
+  <div class="portfolio-list">
+    {% for p in portfolios %}
+    <div class="portfolio-list-item">
+      <div>
+        <a href="{{ url_for('portfolio.view', portfolio_id=p.id) }}" class="portfolio-name">{{ p.name }}</a>
+        <br>
+        <span class="muted" style="font-size:12px;">
+          {{ p.holdings.count() }} holding{{ 's' if p.holdings.count() != 1 else '' }}
+          &nbsp;·&nbsp; Imported {{ p.created_at.strftime('%b %d, %Y') }}
+        </span>
+      </div>
+      <div class="portfolio-item-actions">
+        <a href="{{ url_for('portfolio.view', portfolio_id=p.id) }}" class="btn-view">View</a>
+        <form method="post" action="{{ url_for('portfolio.delete', portfolio_id=p.id) }}" style="display:inline">
+          <button type="submit" class="btn-danger btn-sm"
+                  onclick="return confirm('Delete {{ p.name }}?')">Delete</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted" style="margin-top:8px;">No portfolios yet — upload one above to start tracking.</p>
+  {% endif %}
+
+  {% else %}
+  <div class="portfolio-upload-card" style="text-align:center; padding:32px 24px;">
+    <p style="font-size:15px; margin-bottom:12px;">
+      Import a portfolio from Excel to track holdings, live P&amp;L, and SEC financial data.
+    </p>
+    <a href="{{ url_for('auth.login') }}" class="btn-refresh" style="display:inline-block; text-decoration:none; padding:8px 20px;">
+      Sign in to get started
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ═══════════════ VALUATION MODELS TAB ═══════════════ -->
+<div id="tab-analyses" style="display:none;">
+
+  {% if current_user.is_authenticated %}
+  <div class="portfolio-upload-card">
+    <div class="portfolio-upload-header">
+      <h2>Import Valuation Model</h2>
+    </div>
+    <p class="muted" style="font-size:13px; margin-bottom:16px;">
+      Upload an Excel valuation model (360 Huntington Fund format or similar).
+      The parser reads <em>IS Summary</em>, <em>DCF</em>, and <em>Summary</em> sheets to extract
+      financial projections, WACC, and target prices. Live market data is fetched via Yahoo Finance.
+    </p>
+    <form method="post" action="{{ url_for('portfolio.upload_analysis') }}" enctype="multipart/form-data">
+      <div class="portfolio-upload-row">
+        <div class="form-group" style="flex:1; min-width:160px;">
+          <label>Company Name</label>
+          <input type="text" name="company_name" placeholder="e.g. Take-Two Interactive" required />
+        </div>
+        <div class="form-group" style="flex:0.6; min-width:110px;">
+          <label>Ticker <span class="muted">(optional)</span></label>
+          <input type="text" name="ticker" placeholder="e.g. TTWO" style="text-transform:uppercase;" />
+        </div>
+        <div class="form-group" style="flex:1.4; min-width:220px;">
+          <label>Valuation Model (.xlsx)</label>
+          <input type="file" name="model_file" accept=".xlsx" class="file-input" required />
+        </div>
+        <div class="form-group" style="align-self:flex-end;">
+          <button type="submit" style="white-space:nowrap;">Analyze Model</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {% if analyses %}
+  <h2>Valuation Analyses</h2>
+  <div class="portfolio-list">
+    {% for a in analyses %}
+    <div class="portfolio-list-item">
+      <div>
+        <a href="{{ url_for('portfolio.view_analysis', analysis_id=a.id) }}" class="portfolio-name">
+          {{ a.company_name }}
+          {% if a.ticker %}<span class="ticker-badge" style="font-size:12px;">{{ a.ticker }}</span>{% endif %}
+        </a>
+        <br>
+        <span class="muted" style="font-size:12px;">
+          {% if a.current_price %}Live: <strong>${{ "%.2f"|format(a.current_price) }}</strong> &nbsp;·&nbsp;{% endif %}
+          Imported {{ a.uploaded_at.strftime('%b %d, %Y') }}
+        </span>
+      </div>
+      <div class="portfolio-item-actions">
+        <a href="{{ url_for('portfolio.view_analysis', analysis_id=a.id) }}" class="btn-view">View</a>
+        <form method="post" action="{{ url_for('portfolio.delete_analysis', analysis_id=a.id) }}" style="display:inline">
+          <button type="submit" class="btn-danger btn-sm"
+                  onclick="return confirm('Delete {{ a.company_name }} analysis?')">Delete</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted" style="margin-top:8px;">No analyses yet — upload a valuation model above.</p>
+  {% endif %}
+
+  {% else %}
+  <div class="portfolio-upload-card" style="text-align:center; padding:32px 24px;">
+    <p style="font-size:15px; margin-bottom:12px;">
+      Upload an Excel DCF model to compare intrinsic value against live market prices.
+    </p>
+    <a href="{{ url_for('auth.login') }}" class="btn-refresh" style="display:inline-block; text-decoration:none; padding:8px 20px;">
+      Sign in to get started
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function switchTab(e, tab) {
+  e.preventDefault();
+  document.getElementById('tab-holdings').style.display = tab === 'holdings' ? '' : 'none';
+  document.getElementById('tab-analyses').style.display = tab === 'analyses' ? '' : 'none';
+  document.querySelectorAll('.market-tabs .tab').forEach(function(el) {
+    el.classList.toggle('active', el.getAttribute('href') === '#' + tab);
+  });
+}
+if (location.hash === '#analyses') switchTab({preventDefault:function(){}}, 'analyses');
+</script>
+
+{% endblock %}

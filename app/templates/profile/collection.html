@@ -19,6 +19,11 @@
     {% if item.article.ai_summary %}
       <p class="ai-summary">{{ item.article.ai_summary }}</p>
     {% endif %}
+    <div class="article-actions">
+      <form method="post" action="{{ url_for('profile.remove_item', collection_id=collection.id, article_id=item.article.id) }}">
+        <button type="submit" class="btn-danger btn-sm">Remove</button>
+      </form>
+    </div>
   </div>
   {% endfor %}
 </div>

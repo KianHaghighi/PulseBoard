@@ -23,6 +23,8 @@ class User(UserMixin, db.Model):
 
     likes = db.relationship("Like", backref="user", lazy="dynamic", cascade="all, delete-orphan")
     collections = db.relationship("Collection", backref="user", lazy="dynamic", cascade="all, delete-orphan")
+    portfolios = db.relationship("Portfolio", backref="user", lazy="dynamic", cascade="all, delete-orphan")
+    valuation_analyses = db.relationship("ValuationAnalysis", backref="user", lazy="dynamic", cascade="all, delete-orphan")
 
 
 class Article(db.Model):
@@ -129,6 +131,54 @@ class JobPostingCount(db.Model):
     ats_slug          = db.Column(db.String(128), nullable=False)
 
     __table_args__ = (db.UniqueConstraint("company_name", "snapshot_date"),)
+
+
+class Portfolio(db.Model):
+    __tablename__ = "portfolios"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    refreshed_at = db.Column(db.DateTime)
+
+    holdings = db.relationship(
+        "PortfolioHolding", backref="portfolio", lazy="dynamic", cascade="all, delete-orphan"
+    )
+
+
+class PortfolioHolding(db.Model):
+    __tablename__ = "portfolio_holdings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    portfolio_id = db.Column(db.Integer, db.ForeignKey("portfolios.id"), nullable=False)
+    company_name = db.Column(db.String(255), nullable=False)
+    ticker = db.Column(db.String(20))           # null = private company
+    sector = db.Column(db.String(128))
+    investment_type = db.Column(db.String(64))  # Equity, SAFE, Convertible Note, etc.
+    shares = db.Column(db.Float)
+    cost_per_share = db.Column(db.Float)
+    investment_date = db.Column(db.Date)
+    private_valuation_usd = db.Column(db.BigInteger)  # total company valuation for private cos
+    notes = db.Column(db.Text)
+    # Cached market data
+    last_price = db.Column(db.Float)
+    market_cap = db.Column(db.BigInteger)
+    price_refreshed_at = db.Column(db.DateTime)
+
+
+class ValuationAnalysis(db.Model):
+    __tablename__ = "valuation_analyses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    company_name = db.Column(db.String(255), nullable=False)
+    ticker = db.Column(db.String(20))
+    uploaded_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_json = db.Column(db.Text, nullable=False)  # full parsed model as JSON
+    current_price = db.Column(db.Float)
+    market_cap = db.Column(db.BigInteger)
+    price_refreshed_at = db.Column(db.DateTime)
 
 
 class VCFirm(db.Model):

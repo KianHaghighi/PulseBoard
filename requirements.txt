@@ -11,3 +11,5 @@ python-dotenv==1.0.1
 gunicorn==23.0.0
 apscheduler==3.10.4
 flask-session==0.6.0
+openpyxl==3.1.5
+yfinance==0.2.54

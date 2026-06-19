@@ -21,6 +21,7 @@ def create_app(config=Config):
     from .routes.admin import admin_bp
     from .routes.public_markets import public_bp
     from .routes.vc import vc_bp
+    from .routes.portfolio import portfolio_bp
 
     init_oauth(app)
 
@@ -30,6 +31,7 @@ def create_app(config=Config):
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(public_bp, url_prefix="/public")
     app.register_blueprint(vc_bp, url_prefix="/vc")
+    app.register_blueprint(portfolio_bp, url_prefix="/portfolio")
 
     with app.app_context():
         db.create_all()

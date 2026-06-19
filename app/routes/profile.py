@@ -50,3 +50,13 @@ def delete_collection(collection_id):
     db.session.delete(collection)
     db.session.commit()
     return redirect(url_for("profile.index"))
+
+
+@profile_bp.route("/collections/<int:collection_id>/remove/<int:article_id>", methods=["POST"])
+@login_required
+def remove_item(collection_id, article_id):
+    Collection.query.filter_by(id=collection_id, user_id=current_user.id).first_or_404()
+    item = CollectionItem.query.filter_by(collection_id=collection_id, article_id=article_id).first_or_404()
+    db.session.delete(item)
+    db.session.commit()
+    return redirect(url_for("profile.view_collection", collection_id=collection_id))

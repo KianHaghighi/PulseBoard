@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}{{ portfolio.name }} — PulseBoard{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<a href="{{ url_for('portfolio.index') }}" class="muted" style="font-size:13px;">&larr; Portfolios</a>
+<div style="display:flex; justify-content:space-between; align-items:center; margin:10px 0 4px;">
+  <h1 style="margin:0;">{{ portfolio.name }}</h1>
+  <form method="post" action="{{ url_for('portfolio.refresh', portfolio_id=portfolio.id) }}">
+    <button type="submit" class="btn-refresh">Refresh Prices</button>
+  </form>
+</div>
+{% if portfolio.refreshed_at %}
+<p class="muted" style="font-size:12px; margin-bottom:20px;">
+  Prices last updated {{ portfolio.refreshed_at.strftime('%b %d, %Y at %H:%M UTC') }}
+</p>
+{% endif %}
+
+<!-- Summary Stats -->
+<div class="vc-stat-grid" style="margin-bottom:28px;">
+  <div class="vc-stat">
+    <span class="vc-stat-label">Total Invested</span>
+    <span class="vc-stat-value">{{ summary.total_cost | fmt_price }}</span>
+  </div>
+  <div class="vc-stat">
+    <span class="vc-stat-label">Public Portfolio Value</span>
+    <span class="vc-stat-value">
+      {% if summary.total_current_value %}{{ summary.total_current_value | fmt_price }}{% else %}—{% endif %}
+    </span>
+  </div>
+  <div class="vc-stat">
+    <span class="vc-stat-label">Unrealized P&amp;L (Public)</span>
+    <span class="vc-stat-value
+      {% if summary.total_pnl is not none %}
+        {% if summary.total_pnl >= 0 %}positive{% else %}negative{% endif %}
+      {% endif %}">
+      {% if summary.total_pnl is not none %}
+        {{ summary.total_pnl | fmt_pnl }}
+        {% if summary.pnl_pct is not none %}
+          <span style="font-size:13px; font-weight:500;">({{ summary.pnl_pct | fmt_pct }})</span>
+        {% endif %}
+      {% else %}—{% endif %}
+    </span>
+  </div>
+  <div class="vc-stat">
+    <span class="vc-stat-label">Holdings</span>
+    <span class="vc-stat-value">{{ summary.num_holdings }}</span>
+    <span class="muted" style="font-size:12px;">
+      {{ summary.num_public }} public · {{ summary.num_private }} private
+    </span>
+  </div>
+</div>
+
+<!-- Holdings Table -->
+<h2>Holdings</h2>
+<div style="overflow-x:auto;">
+  <table class="financials-table">
+    <thead>
+      <tr>
+        <th>Company</th>
+        <th>Type</th>
+        <th>Shares</th>
+        <th>Cost/Share</th>
+        <th>Total Cost</th>
+        <th>Current Price</th>
+        <th>Current Value</th>
+        <th>P&amp;L</th>
+        <th>P&amp;L %</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in analyses %}
+      <tr>
+        <td>
+          <strong>{{ a.holding.company_name }}</strong>
+          {% if a.holding.ticker %}
+            <span class="ticker-badge">{{ a.holding.ticker }}</span>
+          {% else %}
+            <span class="stage-tag" style="margin-left:4px; background:#f3e8ff; color:#7c3aed;">Private</span>
+          {% endif %}
+          {% if a.holding.sector %}
+            <br><span class="muted" style="font-size:11px;">{{ a.holding.sector }}</span>
+          {% endif %}
+          {% if a.holding.notes %}
+            <br><span class="muted" style="font-size:11px; font-style:italic;">{{ a.holding.notes }}</span>
+          {% endif %}
+        </td>
+        <td>{{ a.holding.investment_type or "—" }}</td>
+        <td>
+          {% if a.holding.shares %}
+            {{ "{:,.0f}".format(a.holding.shares) }}
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ a.holding.cost_per_share | fmt_price if a.holding.cost_per_share else "—" }}</td>
+        <td>{{ a.total_cost | fmt_price }}</td>
+        <td>
+          {% if a.current_price %}
+            {{ a.current_price | fmt_price }}
+          {% elif a.holding.private_valuation_usd %}
+            <span class="muted" style="font-size:11px;">
+              Co. val: {{ a.holding.private_valuation_usd | fmt_money }}
+            </span>
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ a.current_value | fmt_price if a.current_value is not none else "—" }}</td>
+        <td class="{% if a.pnl is not none %}{% if a.pnl >= 0 %}positive{% else %}negative{% endif %}{% endif %}">
+          {{ a.pnl | fmt_pnl if a.pnl is not none else "—" }}
+        </td>
+        <td class="{% if a.pnl_pct is not none %}{% if a.pnl_pct >= 0 %}positive{% else %}negative{% endif %}{% endif %}">
+          {{ a.pnl_pct | fmt_pct if a.pnl_pct is not none else "—" }}
+        </td>
+      </tr>
+      {% if edgar_data.get(a.holding.ticker) %}
+      {% set snap = edgar_data[a.holding.ticker] %}
+      <tr>
+        <td colspan="9" style="padding:6px 14px 10px; background:#f8f9fb; font-size:12px; color:#555; border-bottom:2px solid #eee;">
+          <strong style="color:#1a1a2e;">SEC Financials</strong>
+          <span class="muted">({{ snap.fiscal_period }} {{ snap.fiscal_year }})</span>
+          &nbsp;&nbsp;
+          Revenue <strong>{{ snap.revenue | fmt_money }}</strong>
+          &nbsp;·&nbsp;
+          Net Income <strong class="{% if snap.net_income is not none %}{% if snap.net_income >= 0 %}positive{% else %}negative{% endif %}{% endif %}">{{ snap.net_income | fmt_money }}</strong>
+          &nbsp;·&nbsp;
+          EPS <strong>{{ snap.eps_basic | fmt_eps }}</strong>
+          &nbsp;·&nbsp;
+          Cash <strong>{{ snap.cash | fmt_money }}</strong>
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Sector Allocation -->
+{% if summary.sectors %}
+<h2 style="margin-top:32px;">Sector Allocation</h2>
+<table class="financials-table" style="max-width:500px;">
+  <thead>
+    <tr>
+      <th>Sector</th>
+      <th>Cost Basis</th>
+      <th>Allocation</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sector, amount in summary.sectors.items() %}
+    <tr>
+      <td>{{ sector }}</td>
+      <td>{{ amount | fmt_price }}</td>
+      <td>
+        {% if summary.total_cost %}
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="alloc-bar-bg">
+              <div class="alloc-bar" style="width:{{ (amount / summary.total_cost * 100) | round(1) }}%"></div>
+            </div>
+            <span>{{ "%.1f%%"|format(amount / summary.total_cost * 100) }}</span>
+          </div>
+        {% else %}—{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<!-- Private Companies Notice -->
+{% if summary.num_private > 0 %}
+<div class="ai-summary" style="margin-top:28px;">
+  <strong>Private Holdings:</strong> Real-time financial data is unavailable for private companies.
+  Enter a <em>Private Valuation ($)</em> in your Excel file to record the company's total valuation.
+  P&amp;L cannot be computed without your ownership percentage.
+  SEC EDGAR data is shown automatically for public companies tracked in our database.
+</div>
+{% endif %}
+
+<!-- Delete -->
+<div style="margin-top:40px; padding-top:20px; border-top:1px solid #eee;">
+  <form method="post" action="{{ url_for('portfolio.delete', portfolio_id=portfolio.id) }}">
+    <button type="submit" class="btn-danger"
+            onclick="return confirm('Delete {{ portfolio.name }}? This cannot be undone.')">
+      Delete Portfolio
+    </button>
+  </form>
+</div>
+
+{% endblock %}
