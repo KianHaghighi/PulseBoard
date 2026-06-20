@@ -53,9 +53,9 @@
       <a href="{{ article.url }}" target="_blank" rel="noopener">{{ article.title }}</a>
     </h2>
     {% if article.ai_summary %}
-      <p class="ai-summary">{{ article.ai_summary }}</p>
+      <p class="ai-summary">{{ article.ai_summary | striptags }}</p>
     {% elif article.content_snippet %}
-      <p class="snippet">{{ article.content_snippet[:200] }}...</p>
+      <p class="snippet">{{ article.content_snippet | striptags | truncate(200) }}</p>
     {% endif %}
     <div class="article-actions">
       <button class="btn-like {% if user_likes.get(article.id) == 1 %}active{% endif %}"

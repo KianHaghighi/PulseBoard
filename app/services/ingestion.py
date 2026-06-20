@@ -1,4 +1,5 @@
 import hashlib
+import re
 import feedparser
 import requests
 from datetime import datetime, timezone
@@ -6,6 +7,10 @@ from flask import current_app
 from ..models.models import Article
 from ..extensions import db
 from .summarizer import tag_category
+
+
+def _strip_html(text: str) -> str:
+    return re.sub(r'<[^>]+>', '', text or '').strip()
 
 RSS_FEEDS = [
     "https://techcrunch.com/feed/",
@@ -42,7 +47,7 @@ def ingest_rss():
                 title=entry.get("title", "")[:512],
                 source=feed.feed.get("title", feed_url),
                 published_at=_parse_date(entry),
-                content_snippet=(entry.get("summary", "") or "")[:1000],
+                content_snippet=_strip_html(entry.get("summary", "") or "")[:1000],
             )
             article.category = tag_category(article)
             db.session.add(article)
@@ -83,7 +88,7 @@ def ingest_newsapi(query="startup funding AI"):
             title=(item.get("title") or "")[:512],
             source=(item.get("source", {}).get("name") or "")[:255],
             published_at=published,
-            content_snippet=(item.get("description") or "")[:1000],
+            content_snippet=_strip_html(item.get("description") or "")[:1000],
         )
         article.category = tag_category(article)
         db.session.add(article)
