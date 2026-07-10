@@ -12,7 +12,7 @@ class Config:
     # Session configuration
     SESSION_TYPE = "filesystem"
     SESSION_PERMANENT = False
-    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = os.environ.get("RENDER") is not None
     SESSION_COOKIE_SAMESITE = "Lax"
 
     # Auth0
