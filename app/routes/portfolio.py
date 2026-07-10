@@ -13,7 +13,7 @@ from ..models.models import Portfolio, PortfolioHolding, ValuationAnalysis
 from ..services.portfolio_analyzer import (
     parse_excel, fetch_market_data,
     build_holding_analysis, build_portfolio_summary,
-    parse_valuation_model,
+    parse_valuation_model, DEMO_USER_AUTH0_ID, DEMO_COMPANY_NAME,
 )
 
 portfolio_bp = Blueprint("portfolio", __name__)
@@ -269,6 +269,26 @@ def upload_analysis():
     db.session.commit()
     flash(f"Valuation model for {company_name} imported successfully.", "success")
     return redirect(url_for("portfolio.view_analysis", analysis_id=analysis.id))
+
+
+@portfolio_bp.route("/analyze/demo")
+def view_demo_analysis():
+    """Public sample valuation model — no account required."""
+    from ..models.models import User
+    demo_user = User.query.filter_by(auth0_id=DEMO_USER_AUTH0_ID).first()
+    analysis = ValuationAnalysis.query.filter_by(
+        user_id=demo_user.id, company_name=DEMO_COMPANY_NAME,
+    ).first_or_404()
+
+    model_data = json.loads(analysis.data_json)
+
+    return render_template(
+        "portfolio/analysis_view.html",
+        analysis=analysis,
+        model=model_data,
+        edgar_snap=None,
+        is_demo=True,
+    )
 
 
 @portfolio_bp.route("/analyze/<int:analysis_id>")

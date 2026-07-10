@@ -37,8 +37,10 @@ def create_app(config=Config):
         db.create_all()
         from .services.edgar import seed_companies
         from .services.vc_data import seed_vc_firms
+        from .services.portfolio_analyzer import seed_demo_valuation
         seed_companies()
         seed_vc_firms()
+        seed_demo_valuation()
 
     if not app.config.get("TESTING"):
         _start_scheduler(app)

@@ -12,12 +12,19 @@
     </h1>
     <span class="muted" style="font-size:12px;">Valuation model · Imported {{ analysis.uploaded_at.strftime('%b %d, %Y') }}</span>
   </div>
-  {% if analysis.ticker %}
+  {% if analysis.ticker and not is_demo %}
   <form method="post" action="{{ url_for('portfolio.refresh_analysis', analysis_id=analysis.id) }}">
     <button type="submit" class="btn-refresh">Refresh Price</button>
   </form>
   {% endif %}
 </div>
+
+{% if is_demo %}
+<div class="ai-summary" style="margin-bottom:20px;">
+  <strong>Sample model.</strong> This is a permanent example showing what an uploaded valuation model looks like once parsed —
+  <a href="{{ url_for('auth.login') }}">sign in</a> to upload your own.
+</div>
+{% endif %}
 
 {% if analysis.price_refreshed_at %}
 <p class="muted" style="font-size:12px; margin-bottom:20px;">
@@ -171,7 +178,7 @@
       <tr>
         <td style="font-weight:600;">Revenue</td>
         {% for v in model.revenue %}
-        <td>{% if v is not none %}${{ "{:,.0f}M"|format(v) }}{% else %}—{% endif %}</td>
+        <td>{% if v is not none %}${{ "{:,.0f}M".format(v) }}{% else %}—{% endif %}</td>
         {% endfor %}
       </tr>
       {% endif %}
@@ -190,7 +197,7 @@
         <td style="font-weight:600;">EBIT</td>
         {% for v in model.ebit %}
         <td class="{% if v is not none %}{% if v >= 0 %}positive{% else %}negative{% endif %}{% endif %}">
-          {% if v is not none %}${{ "{:,.0f}M"|format(v) }}{% else %}—{% endif %}
+          {% if v is not none %}${{ "{:,.0f}M".format(v) }}{% else %}—{% endif %}
         </td>
         {% endfor %}
       </tr>
@@ -210,7 +217,7 @@
         <td style="font-weight:600;">Net Income</td>
         {% for v in model.net_income %}
         <td class="{% if v is not none %}{% if v >= 0 %}positive{% else %}negative{% endif %}{% endif %}">
-          {% if v is not none %}${{ "{:,.0f}M"|format(v) }}{% else %}—{% endif %}
+          {% if v is not none %}${{ "{:,.0f}M".format(v) }}{% else %}—{% endif %}
         </td>
         {% endfor %}
       </tr>
@@ -244,6 +251,7 @@
 </div>
 {% endif %}
 
+{% if not is_demo %}
 <!-- Delete -->
 <div style="margin-top:40px; padding-top:20px; border-top:1px solid #eee;">
   <form method="post" action="{{ url_for('portfolio.delete_analysis', analysis_id=analysis.id) }}">
@@ -253,5 +261,6 @@
     </button>
   </form>
 </div>
+{% endif %}
 
 {% endblock %}

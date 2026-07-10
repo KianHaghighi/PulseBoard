@@ -3,6 +3,9 @@ import json
 import openpyxl
 from datetime import datetime, date
 
+DEMO_USER_AUTH0_ID = "demo|pulseboard"
+DEMO_COMPANY_NAME = "NimbusTech Inc. (Sample Model)"
+
 
 # ---------------------------------------------------------------------------
 # Excel parsing
@@ -267,6 +270,64 @@ def parse_valuation_model(file_bytes: bytes) -> dict | None:
                 result["model_upside"] = round(float(row[5]), 4)
 
     return result if len(result) > 1 else None
+
+
+# ---------------------------------------------------------------------------
+# Guest-viewable demo model
+# ---------------------------------------------------------------------------
+
+def seed_demo_valuation():
+    """Seed a permanent sample valuation model, owned by a system demo user,
+    so guests can see the Valuation Model Analysis feature without an account."""
+    from ..extensions import db
+    from ..models.models import User, ValuationAnalysis
+
+    demo_user = User.query.filter_by(auth0_id=DEMO_USER_AUTH0_ID).first()
+    if not demo_user:
+        demo_user = User(
+            auth0_id=DEMO_USER_AUTH0_ID,
+            email="demo@pulseboard.io",
+            name="PulseBoard Demo",
+        )
+        db.session.add(demo_user)
+        db.session.flush()
+
+    existing = ValuationAnalysis.query.filter_by(
+        user_id=demo_user.id, company_name=DEMO_COMPANY_NAME,
+    ).first()
+    if existing:
+        return
+
+    model_data = {
+        "model_price": 42.50,
+        "risk_free_rate": 0.0425,
+        "beta": 1.15,
+        "cost_of_equity": 0.0950,
+        "wacc": 0.0875,
+        "terminal_growth_rate": 0.025,
+        "dcf_per_share": 47.80,
+        "fiscal_years": [2023, 2024, 2025, 2026, 2027],
+        "is_projected": [False, False, True, True, True],
+        "revenue": [820.4, 968.1, 1120.6, 1290.7, 1475.9],
+        "ebit": [102.5, 145.2, 179.3, 219.4, 265.7],
+        "net_income": [68.3, 98.7, 124.5, 153.2, 187.6],
+        "gross_margin": [0.712, 0.724, 0.731, 0.738, 0.744],
+        "ebit_margin": [0.125, 0.150, 0.160, 0.170, 0.180],
+        "target_low": 38.00,
+        "target_median": 45.50,
+        "target_high": 53.00,
+        "model_current_price": 42.50,
+        "model_upside": 0.0706,
+    }
+
+    analysis = ValuationAnalysis(
+        user_id=demo_user.id,
+        company_name=DEMO_COMPANY_NAME,
+        ticker=None,
+        data_json=json.dumps(model_data),
+    )
+    db.session.add(analysis)
+    db.session.commit()
 
 
 def build_portfolio_summary(analyses: list) -> dict:
