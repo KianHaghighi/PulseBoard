@@ -35,6 +35,7 @@
       <th>Value</th>
       <th>Shares</th>
       <th>QoQ Change</th>
+      <th>Source</th>
     </tr>
   </thead>
   <tbody>
@@ -52,6 +53,14 @@
       <td>{{ "{:,}".format(r.holding.shares) if r.holding.shares else '—' }}</td>
       <td class="{{ 'positive' if r.qoq and r.qoq > 0 else 'negative' if r.qoq and r.qoq < 0 else '' }}">
         {{ r.qoq | fmt_holding_pct }}
+      </td>
+      <td>
+        {% set src_url = manager.cik | sec_filing_url(r.holding.accession_number) %}
+        {% if src_url %}
+        <a href="{{ src_url }}" target="_blank" rel="noopener" class="edgar-link" style="font-size:12px;">13F-HR ↗</a>
+        {% else %}
+        <span class="muted">—</span>
+        {% endif %}
       </td>
     </tr>
     {% endfor %}

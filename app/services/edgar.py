@@ -146,6 +146,7 @@ def refresh_company(company) -> int:
             snap.eps_basic     = eps_map.get(e["end"])
             snap.total_assets  = assets_map.get(e["end"])
             snap.cash          = cash_map.get(e["end"])
+            snap.source_accn   = e.get("accn")
             upserted += 1
 
     company.last_refreshed_at = datetime.now(timezone.utc)

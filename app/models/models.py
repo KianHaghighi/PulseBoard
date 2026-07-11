@@ -120,6 +120,7 @@ class FinancialSnapshot(db.Model):
     eps_basic = db.Column(db.Float)
     total_assets = db.Column(db.BigInteger)
     cash = db.Column(db.BigInteger)
+    source_accn = db.Column(db.String(20))  # SEC accession number of the 10-K/10-Q this came from
 
     __table_args__ = (db.UniqueConstraint("company_id", "period_end", "period_type"),)
 
@@ -243,6 +244,7 @@ class InstitutionalHolding(db.Model):
     value_usd = db.Column(db.BigInteger)  # aggregated across all infoTable rows for this cusip
     shares = db.Column(db.BigInteger)
     put_call = db.Column(db.String(4))  # "PUT" | "CALL" | None (None = long equity position)
+    accession_number = db.Column(db.String(20))  # SEC accession number of the source 13F-HR filing
 
     __table_args__ = (
         db.UniqueConstraint("manager_id", "cusip", "period_end", "put_call", name="uq_holding_period"),

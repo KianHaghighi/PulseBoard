@@ -38,6 +38,7 @@ def create_app(config=Config):
     with app.app_context():
         db.create_all()
         _patch_public_companies_cusip_column()
+        _patch_source_citation_columns()
         from .services.edgar import seed_companies
         from .services.vc_data import seed_vc_firms
         from .services.portfolio_analyzer import seed_demo_valuation
@@ -53,24 +54,38 @@ def create_app(config=Config):
     return app
 
 
+def _add_column_if_missing(conn, table: str, column: str, coltype: str):
+    """db.create_all() only creates missing tables, it never alters existing
+    ones, and this project has no migration tool — deployments that predate a
+    newly-added column need it patched in by hand, idempotently, on boot."""
+    from sqlalchemy import text
+
+    if db.engine.dialect.name == "sqlite":
+        cols = [row[1] for row in conn.execute(text(f"PRAGMA table_info({table})"))]
+        if column in cols:
+            return
+        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"))
+    else:
+        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {coltype}"))
+
+
 def _patch_public_companies_cusip_column():
-    """One-off, idempotent schema patch: db.create_all() only creates missing
-    tables, it never alters existing ones, and this project has no migration
-    tool. Deployments that predate the `cusip` column need it added by hand."""
     from sqlalchemy import text
 
     with db.engine.begin() as conn:
-        if db.engine.dialect.name == "sqlite":
-            cols = [row[1] for row in conn.execute(text("PRAGMA table_info(public_companies)"))]
-            if "cusip" in cols:
-                return
-            conn.execute(text("ALTER TABLE public_companies ADD COLUMN cusip VARCHAR(9)"))
-        else:
-            conn.execute(text("ALTER TABLE public_companies ADD COLUMN IF NOT EXISTS cusip VARCHAR(9)"))
+        _add_column_if_missing(conn, "public_companies", "cusip", "VARCHAR(9)")
         conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_public_companies_cusip "
             "ON public_companies (cusip)"
         ))
+
+
+def _patch_source_citation_columns():
+    """Per-row audit trail: which exact SEC filing a financial snapshot or
+    institutional holding was sourced from."""
+    with db.engine.begin() as conn:
+        _add_column_if_missing(conn, "financial_snapshots", "source_accn", "VARCHAR(20)")
+        _add_column_if_missing(conn, "institutional_holdings", "accession_number", "VARCHAR(20)")
 
 
 def _start_scheduler(app):

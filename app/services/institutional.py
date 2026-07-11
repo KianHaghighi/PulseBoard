@@ -227,6 +227,7 @@ def refresh_manager(manager) -> int:
         holding.value_usd = row["value_usd"]
         holding.shares = row["shares"]
         holding.filed_at = filed_at
+        holding.accession_number = accession["accession_number"]
         holding.public_company_id = company.id if company else None
         upserted += 1
 

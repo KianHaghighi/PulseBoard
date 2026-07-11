@@ -36,6 +36,16 @@ def fmt_pct(val):
     return f"{sign}{val:.1f}%"
 
 
+@public_bp.app_template_filter("sec_filing_url")
+def sec_filing_url(cik, accession_number):
+    """Deep link to the exact SEC EDGAR filing index page a data point came from."""
+    if not cik or not accession_number:
+        return None
+    cik_nolead = str(int(cik))
+    accn_nodash = accession_number.replace("-", "")
+    return f"https://www.sec.gov/Archives/edgar/data/{cik_nolead}/{accn_nodash}/{accession_number}-index.htm"
+
+
 @public_bp.route("/")
 def index():
     companies = PublicCompany.query.order_by(PublicCompany.ticker).all()

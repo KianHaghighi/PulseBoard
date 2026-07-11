@@ -33,6 +33,7 @@
       <th>EPS (Basic)</th>
       <th>Total Assets</th>
       <th>Cash</th>
+      <th>Source</th>
     </tr>
   </thead>
   <tbody>
@@ -47,6 +48,14 @@
       <td>{{ s.eps_basic | fmt_eps }}</td>
       <td>{{ s.total_assets | fmt_money }}</td>
       <td>{{ s.cash | fmt_money }}</td>
+      <td>
+        {% set src_url = company.cik | sec_filing_url(s.source_accn) %}
+        {% if src_url %}
+        <a href="{{ src_url }}" target="_blank" rel="noopener" class="edgar-link" style="font-size:12px;">10-K ↗</a>
+        {% else %}
+        <span class="muted">—</span>
+        {% endif %}
+      </td>
     </tr>
     {% endfor %}
   </tbody>
@@ -63,6 +72,7 @@
       <th>Revenue</th>
       <th>Net Income</th>
       <th>EPS (Basic)</th>
+      <th>Source</th>
     </tr>
   </thead>
   <tbody>
@@ -75,6 +85,14 @@
         {{ s.net_income | fmt_money }}
       </td>
       <td>{{ s.eps_basic | fmt_eps }}</td>
+      <td>
+        {% set src_url = company.cik | sec_filing_url(s.source_accn) %}
+        {% if src_url %}
+        <a href="{{ src_url }}" target="_blank" rel="noopener" class="edgar-link" style="font-size:12px;">10-Q ↗</a>
+        {% else %}
+        <span class="muted">—</span>
+        {% endif %}
+      </td>
     </tr>
     {% endfor %}
   </tbody>
@@ -100,7 +118,15 @@
   {% endif %}
   <div class="vc-stat">
     <span class="vc-stat-label">Source</span>
-    <span class="vc-stat-value" style="font-size:14px; text-transform:capitalize;">{{ job_latest.ats_type }}</span>
+    <span class="vc-stat-value" style="font-size:14px;">
+      {% if job_latest.ats_type == 'greenhouse' %}
+      <a href="https://boards.greenhouse.io/{{ job_latest.ats_slug }}" target="_blank" rel="noopener" class="edgar-link">Greenhouse ↗</a>
+      {% elif job_latest.ats_type == 'lever' %}
+      <a href="https://jobs.lever.co/{{ job_latest.ats_slug }}" target="_blank" rel="noopener" class="edgar-link">Lever ↗</a>
+      {% else %}
+      <span style="text-transform:capitalize;">{{ job_latest.ats_type }}</span>
+      {% endif %}
+    </span>
   </div>
   <div class="vc-stat">
     <span class="vc-stat-label">As of</span>
@@ -137,6 +163,7 @@
       <th>Value</th>
       <th>Shares</th>
       <th>As Of</th>
+      <th>Source</th>
     </tr>
   </thead>
   <tbody>
@@ -146,6 +173,14 @@
       <td>{{ h.value_usd | fmt_holding_money }}</td>
       <td>{{ "{:,}".format(h.shares) if h.shares else '—' }}</td>
       <td class="muted">{{ h.period_end.strftime('%b %d, %Y') }}</td>
+      <td>
+        {% set src_url = h.manager.cik | sec_filing_url(h.accession_number) %}
+        {% if src_url %}
+        <a href="{{ src_url }}" target="_blank" rel="noopener" class="edgar-link" style="font-size:12px;">13F-HR ↗</a>
+        {% else %}
+        <span class="muted">—</span>
+        {% endif %}
+      </td>
     </tr>
     {% endfor %}
   </tbody>
