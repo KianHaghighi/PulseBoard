@@ -47,6 +47,17 @@ def trigger_ingest():
     return redirect(url_for("admin.index"))
 
 
+@admin_bp.route("/institutional/refresh", methods=["POST"])
+@login_required
+@admin_required
+def trigger_institutional_refresh():
+    from ..services.institutional import refresh_all
+    from flask import flash
+    refresh_all()
+    flash("Institutional ownership refresh triggered successfully.", "success")
+    return redirect(url_for("admin.index"))
+
+
 @admin_bp.route("/articles/<int:article_id>/delete", methods=["POST"])
 @login_required
 @admin_required

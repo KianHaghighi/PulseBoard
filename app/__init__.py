@@ -22,6 +22,7 @@ def create_app(config=Config):
     from .routes.public_markets import public_bp
     from .routes.vc import vc_bp
     from .routes.portfolio import portfolio_bp
+    from .routes.institutional import institutional_bp
 
     init_oauth(app)
 
@@ -32,15 +33,18 @@ def create_app(config=Config):
     app.register_blueprint(public_bp, url_prefix="/public")
     app.register_blueprint(vc_bp, url_prefix="/vc")
     app.register_blueprint(portfolio_bp, url_prefix="/portfolio")
+    app.register_blueprint(institutional_bp, url_prefix="/institutional")
 
     with app.app_context():
         db.create_all()
         from .services.edgar import seed_companies
         from .services.vc_data import seed_vc_firms
         from .services.portfolio_analyzer import seed_demo_valuation
+        from .services.institutional import seed_managers
         seed_companies()
         seed_vc_firms()
         seed_demo_valuation()
+        seed_managers()
 
     if not app.config.get("TESTING"):
         _start_scheduler(app)
@@ -67,6 +71,11 @@ def _start_scheduler(app):
             from .services.jobs import refresh_all_jobs
             refresh_all_jobs()
 
+    def run_institutional_refresh():
+        with app.app_context():
+            from .services.institutional import refresh_all
+            refresh_all()
+
     def run_digest():
         with app.app_context():
             from .services.digest import send_daily_digest
@@ -80,6 +89,10 @@ def _start_scheduler(app):
     )
     scheduler.add_job(
         run_jobs_refresh, "interval", hours=24, id="jobs_refresh",
+        next_run_time=datetime.now(timezone.utc),
+    )
+    scheduler.add_job(
+        run_institutional_refresh, "interval", hours=24, id="institutional_refresh",
         next_run_time=datetime.now(timezone.utc),
     )
     scheduler.add_job(run_digest, "cron", hour=8, minute=0, id="daily_digest")

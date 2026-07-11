@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Institutional Holdings — PulseBoard{% endblock %}
+
+{% block content %}
+<div class="market-tabs">
+  <a href="{{ url_for('feed.index') }}" class="tab">Private Markets</a>
+  <a href="{{ url_for('public.index') }}" class="tab">Public Markets</a>
+  <a href="{{ url_for('vc.index') }}" class="tab">Funding</a>
+  <a href="{{ url_for('institutional.index') }}" class="tab active">Institutional</a>
+</div>
+
+<div class="public-header">
+  <h1>Institutional Holdings</h1>
+  <p class="muted">Hedge funds and mutual funds' US equity positions, sourced from SEC Form 13F filings.</p>
+</div>
+
+<div class="vc-filters">
+  <form method="get" action="{{ url_for('institutional.index') }}" class="vc-filter-form">
+    <input
+      type="text"
+      name="q"
+      placeholder="Search by manager name..."
+      value="{{ q }}"
+      class="vc-search-input"
+    />
+    <button type="submit" class="vc-search-btn">Search</button>
+  </form>
+</div>
+
+<table class="financials-table">
+  <thead>
+    <tr>
+      <th>Manager</th>
+      <th>Type</th>
+      <th>Latest Quarter</th>
+      <th>Reported Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in summaries %}
+    <tr>
+      <td><a href="{{ url_for('institutional.manager', manager_id=s.manager.id) }}" class="ticker-link">{{ s.manager.name }}</a></td>
+      <td><span class="category-tag">{{ s.manager.manager_type or 'Institutional' }}</span></td>
+      <td class="muted">{{ s.latest_period.strftime('%b %d, %Y') if s.latest_period else 'Not yet refreshed' }}</td>
+      <td>{{ s.total_value | fmt_holding_money }}</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="4" class="muted" style="text-align:center; padding:24px;">
+        No managers found. <a href="{{ url_for('institutional.index') }}">Clear search</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

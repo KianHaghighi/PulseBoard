@@ -6,6 +6,7 @@
   <a href="{{ url_for('feed.index') }}" class="tab">Private Markets</a>
   <a href="{{ url_for('public.index') }}" class="tab active">Public Markets</a>
   <a href="{{ url_for('vc.index') }}" class="tab">Funding</a>
+  <a href="{{ url_for('institutional.index') }}" class="tab">Institutional</a>
 </div>
 
 <div class="company-header">
@@ -124,6 +125,31 @@
   </tbody>
 </table>
 {% endif %}
+{% endif %}
+
+{% if holders %}
+<h2 style="margin-top:32px;">Institutional Ownership</h2>
+<p class="muted" style="margin-bottom:12px;">Top holders among tracked managers, from SEC Form 13F filings.</p>
+<table class="financials-table">
+  <thead>
+    <tr>
+      <th>Manager</th>
+      <th>Value</th>
+      <th>Shares</th>
+      <th>As Of</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for h in holders %}
+    <tr>
+      <td><a href="{{ url_for('institutional.manager', manager_id=h.manager.id) }}" class="ticker-link">{{ h.manager.name }}</a></td>
+      <td>{{ h.value_usd | fmt_holding_money }}</td>
+      <td>{{ "{:,}".format(h.shares) if h.shares else '—' }}</td>
+      <td class="muted">{{ h.period_end.strftime('%b %d, %Y') }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
 {% endif %}
 
 <p style="margin-top:24px;"><a href="{{ url_for('public.index') }}">&larr; Back to Public Markets</a></p>

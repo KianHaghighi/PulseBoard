@@ -88,6 +88,7 @@ class PublicCompany(db.Model):
     ticker = db.Column(db.String(10), unique=True, nullable=False)
     name = db.Column(db.String(255), nullable=False)
     cik = db.Column(db.String(10), unique=True, nullable=False)
+    cusip = db.Column(db.String(9), unique=True, nullable=True)
     sector = db.Column(db.String(128))
     last_refreshed_at = db.Column(db.DateTime)
 
@@ -98,6 +99,10 @@ class PublicCompany(db.Model):
     job_counts = db.relationship(
         "JobPostingCount", backref="public_company", lazy="dynamic",
         foreign_keys="JobPostingCount.public_company_id",
+    )
+    institutional_holdings = db.relationship(
+        "InstitutionalHolding", backref="public_company", lazy="dynamic",
+        foreign_keys="InstitutionalHolding.public_company_id",
     )
 
 
@@ -208,3 +213,37 @@ class VCFirm(db.Model):
     @property
     def portfolio_list(self):
         return [s.strip() for s in (self.notable_portfolio or "").split(",") if s.strip()]
+
+
+class InstitutionalManager(db.Model):
+    __tablename__ = "institutional_managers"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False, unique=True)
+    cik = db.Column(db.String(10), unique=True, nullable=False)
+    manager_type = db.Column(db.String(64))  # "Hedge Fund" | "Mutual Fund" | "Family Office"
+    last_refreshed_at = db.Column(db.DateTime)
+
+    holdings = db.relationship(
+        "InstitutionalHolding", backref="manager", lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+
+
+class InstitutionalHolding(db.Model):
+    __tablename__ = "institutional_holdings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    manager_id = db.Column(db.Integer, db.ForeignKey("institutional_managers.id"), nullable=False)
+    public_company_id = db.Column(db.Integer, db.ForeignKey("public_companies.id"), nullable=True)
+    issuer_name = db.Column(db.String(255), nullable=False)
+    cusip = db.Column(db.String(9), nullable=False, index=True)
+    period_end = db.Column(db.Date, nullable=False)  # quarter this 13F filing covers
+    filed_at = db.Column(db.Date)
+    value_usd = db.Column(db.BigInteger)  # aggregated across all infoTable rows for this cusip
+    shares = db.Column(db.BigInteger)
+    put_call = db.Column(db.String(4))  # "PUT" | "CALL" | None (None = long equity position)
+
+    __table_args__ = (
+        db.UniqueConstraint("manager_id", "cusip", "period_end", "put_call", name="uq_holding_period"),
+    )

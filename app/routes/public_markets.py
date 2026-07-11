@@ -80,10 +80,17 @@ def company(company_id):
                    .limit(30).all())
     job_latest = job_history[0] if job_history else None
     job_mom = get_mom_change(c.name) if job_latest else None
+
+    holders = []
+    if c.cusip:
+        from ..services.institutional import get_holders_for_company
+        holders = get_holders_for_company(c.id)
+
     return render_template(
         "public/company.html",
         company=c, annual=annual, quarterly=quarterly,
         job_history=job_history, job_latest=job_latest, job_mom=job_mom,
+        holders=holders,
     )
 
 

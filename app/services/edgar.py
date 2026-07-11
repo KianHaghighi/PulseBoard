@@ -20,16 +20,19 @@ CASH_CONCEPTS = [
 ]
 
 SEED_COMPANIES = [
-    {"ticker": "AAPL",  "name": "Apple Inc.",              "cik": "0000320193", "sector": "Consumer Tech"},
-    {"ticker": "MSFT",  "name": "Microsoft Corp.",          "cik": "0000789019", "sector": "Enterprise Tech"},
-    {"ticker": "GOOGL", "name": "Alphabet Inc.",            "cik": "0001652044", "sector": "Internet"},
-    {"ticker": "AMZN",  "name": "Amazon.com Inc.",          "cik": "0001018724", "sector": "E-Commerce / Cloud"},
-    {"ticker": "META",  "name": "Meta Platforms Inc.",      "cik": "0001326801", "sector": "Social Media"},
-    {"ticker": "NVDA",  "name": "NVIDIA Corp.",             "cik": "0001045810", "sector": "Semiconductors"},
-    {"ticker": "TSLA",  "name": "Tesla Inc.",               "cik": "0001318605", "sector": "EV / Energy"},
-    {"ticker": "CRM",   "name": "Salesforce Inc.",          "cik": "0001108524", "sector": "Enterprise SaaS"},
-    {"ticker": "PLTR",  "name": "Palantir Technologies",    "cik": "0001321655", "sector": "AI / Analytics"},
-    {"ticker": "SNOW",  "name": "Snowflake Inc.",           "cik": "0001640147", "sector": "Data Cloud"},
+    # CUSIPs verified against real SEC Form 13F infoTable filings (Bridgewater
+    # Associates 0001350694-26-000002, Berkshire Hathaway 0001193125-26-226661,
+    # Carroll Investors 0001606587-22-000795), not vendor-sourced.
+    {"ticker": "AAPL",  "name": "Apple Inc.",              "cik": "0000320193", "cusip": "037833100", "sector": "Consumer Tech"},
+    {"ticker": "MSFT",  "name": "Microsoft Corp.",          "cik": "0000789019", "cusip": "594918104", "sector": "Enterprise Tech"},
+    {"ticker": "GOOGL", "name": "Alphabet Inc.",            "cik": "0001652044", "cusip": "02079K305", "sector": "Internet"},
+    {"ticker": "AMZN",  "name": "Amazon.com Inc.",          "cik": "0001018724", "cusip": "023135106", "sector": "E-Commerce / Cloud"},
+    {"ticker": "META",  "name": "Meta Platforms Inc.",      "cik": "0001326801", "cusip": "30303M102", "sector": "Social Media"},
+    {"ticker": "NVDA",  "name": "NVIDIA Corp.",             "cik": "0001045810", "cusip": "67066G104", "sector": "Semiconductors"},
+    {"ticker": "TSLA",  "name": "Tesla Inc.",               "cik": "0001318605", "cusip": "88160R101", "sector": "EV / Energy"},
+    {"ticker": "CRM",   "name": "Salesforce Inc.",          "cik": "0001108524", "cusip": "79466L302", "sector": "Enterprise SaaS"},
+    {"ticker": "PLTR",  "name": "Palantir Technologies",    "cik": "0001321655", "cusip": "69608A108", "sector": "AI / Analytics"},
+    {"ticker": "SNOW",  "name": "Snowflake Inc.",           "cik": "0001640147", "cusip": "833445109", "sector": "Data Cloud"},
 ]
 
 
@@ -93,11 +96,14 @@ def _instant_map(entries: list[dict]) -> dict:
 def seed_companies():
     from ..models.models import PublicCompany
     for c in SEED_COMPANIES:
-        if not PublicCompany.query.filter_by(ticker=c["ticker"]).first():
+        existing = PublicCompany.query.filter_by(ticker=c["ticker"]).first()
+        if not existing:
             db.session.add(PublicCompany(
                 ticker=c["ticker"], name=c["name"],
-                cik=c["cik"], sector=c["sector"],
+                cik=c["cik"], cusip=c.get("cusip"), sector=c["sector"],
             ))
+        elif not existing.cusip and c.get("cusip"):
+            existing.cusip = c["cusip"]
     db.session.commit()
 
 

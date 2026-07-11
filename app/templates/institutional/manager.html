@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ manager.name }} — PulseBoard{% endblock %}
+
+{% block content %}
+<div class="market-tabs">
+  <a href="{{ url_for('feed.index') }}" class="tab">Private Markets</a>
+  <a href="{{ url_for('public.index') }}" class="tab">Public Markets</a>
+  <a href="{{ url_for('vc.index') }}" class="tab">Funding</a>
+  <a href="{{ url_for('institutional.index') }}" class="tab active">Institutional</a>
+</div>
+
+<div class="vc-detail-header">
+  <div>
+    <h1>{{ manager.name }}</h1>
+    <span class="muted">{{ manager.manager_type or 'Institutional Manager' }} &middot; CIK {{ manager.cik }}</span>
+  </div>
+  <a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={{ manager.cik }}&type=13F-HR&dateb=&owner=include&count=10"
+     target="_blank" rel="noopener" class="edgar-link">SEC 13F Filings &rarr;</a>
+</div>
+
+<p class="muted" style="margin-top:8px;">
+  Last refreshed: {{ manager.last_refreshed_at.strftime('%b %d, %Y %H:%M UTC') if manager.last_refreshed_at else 'Never' }}
+  {% if latest_period %} &middot; Holdings as of {{ latest_period.strftime('%b %d, %Y') }} (13F filing quarter end){% endif %}
+</p>
+
+{% if rows %}
+<p class="muted" style="margin-top:20px;">
+  Showing top {{ rows|length }} of {{ total_holdings }} reported position{% if total_holdings != 1 %}s{% endif %} by value.
+</p>
+<table class="financials-table" style="margin-top:12px;">
+  <thead>
+    <tr>
+      <th>Issuer</th>
+      <th>Ticker</th>
+      <th>Value</th>
+      <th>Shares</th>
+      <th>QoQ Change</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.holding.issuer_name }}</td>
+      <td>
+        {% if r.holding.public_company %}
+        <a href="{{ url_for('public.company', company_id=r.holding.public_company.id) }}" class="ticker-link">{{ r.holding.public_company.ticker }}</a>
+        {% else %}
+        <span class="muted">—</span>
+        {% endif %}
+      </td>
+      <td>{{ r.holding.value_usd | fmt_holding_money }}</td>
+      <td>{{ "{:,}".format(r.holding.shares) if r.holding.shares else '—' }}</td>
+      <td class="{{ 'positive' if r.qoq and r.qoq > 0 else 'negative' if r.qoq and r.qoq < 0 else '' }}">
+        {{ r.qoq | fmt_holding_pct }}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted" style="margin-top:24px;">No holdings data yet. Trigger a refresh from the admin panel.</p>
+{% endif %}
+
+<p style="margin-top:24px;"><a href="{{ url_for('institutional.index') }}">&larr; Back to Institutional Holdings</a></p>
+{% endblock %}

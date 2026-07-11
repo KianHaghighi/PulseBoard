@@ -12,6 +12,10 @@
   <button type="submit">Run Ingestion Now</button>
 </form>
 
+<form method="post" action="{{ url_for('admin.trigger_institutional_refresh') }}" style="margin-bottom: 24px;">
+  <button type="submit">Refresh 13F Institutional Holdings</button>
+</form>
+
 <h2>Users</h2>
 <table>
   <thead>
