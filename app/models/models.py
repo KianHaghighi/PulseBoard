@@ -186,6 +186,27 @@ class ValuationAnalysis(db.Model):
     market_cap = db.Column(db.BigInteger)
     price_refreshed_at = db.Column(db.DateTime)
 
+    scenarios = db.relationship(
+        "ValuationScenario", backref="analysis", lazy="dynamic", cascade="all, delete-orphan"
+    )
+
+
+class ValuationScenario(db.Model):
+    """A saved what-if DCF scenario (e.g. Bear/Base/Bull) for a ValuationAnalysis."""
+    __tablename__ = "valuation_scenarios"
+
+    id = db.Column(db.Integer, primary_key=True)
+    analysis_id = db.Column(db.Integer, db.ForeignKey("valuation_analyses.id"), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    revenue_growth_rate = db.Column(db.Float, nullable=False)
+    ebit_margin = db.Column(db.Float, nullable=False)
+    tax_rate = db.Column(db.Float, nullable=False)
+    wacc = db.Column(db.Float, nullable=False)
+    terminal_growth_rate = db.Column(db.Float, nullable=False)
+    enterprise_value = db.Column(db.Float, nullable=False)
+    implied_price = db.Column(db.Float)  # null when shares_outstanding is unknown
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
 
 class VCFirm(db.Model):
     __tablename__ = "vc_firms"

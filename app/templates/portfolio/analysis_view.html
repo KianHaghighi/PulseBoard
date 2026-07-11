@@ -158,6 +158,114 @@
 </div>
 {% endif %}
 
+<!-- Scenario Analysis -->
+<h2 style="margin-top:28px;">Run Your Own Scenario</h2>
+<p class="muted" style="font-size:13px; margin-bottom:12px; max-width:640px;">
+  Drag the assumptions below to see an instant implied {{ 'share price' if shares_outstanding else 'enterprise value' }}.
+  Simplified DCF (unlevered FCF &asymp; EBIT &times; (1 &minus; tax rate), 5-year horizon) &mdash;
+  a quick what-if tool, not a substitute for the full uploaded model.
+</p>
+
+<div class="scenario-panel"
+     data-base-revenue="{{ base_defaults.base_revenue or '' }}"
+     data-shares-outstanding="{{ shares_outstanding or '' }}">
+
+  <div class="scenario-sliders">
+    <div class="scenario-slider-row">
+      <label for="sc-growth">Revenue Growth</label>
+      <input type="range" id="sc-growth" min="-10" max="40" step="0.5"
+             value="{{ '%.1f'|format(base_defaults.revenue_growth_rate * 100) }}">
+      <span class="scenario-readout" id="sc-growth-val">{{ '%.1f'|format(base_defaults.revenue_growth_rate * 100) }}%</span>
+    </div>
+    <div class="scenario-slider-row">
+      <label for="sc-margin">EBIT Margin</label>
+      <input type="range" id="sc-margin" min="0" max="60" step="0.5"
+             value="{{ '%.1f'|format(base_defaults.ebit_margin * 100) }}">
+      <span class="scenario-readout" id="sc-margin-val">{{ '%.1f'|format(base_defaults.ebit_margin * 100) }}%</span>
+    </div>
+    <div class="scenario-slider-row">
+      <label for="sc-tax">Tax Rate</label>
+      <input type="range" id="sc-tax" min="0" max="40" step="0.5"
+             value="{{ '%.1f'|format(base_defaults.tax_rate * 100) }}">
+      <span class="scenario-readout" id="sc-tax-val">{{ '%.1f'|format(base_defaults.tax_rate * 100) }}%</span>
+    </div>
+    <div class="scenario-slider-row">
+      <label for="sc-wacc">WACC</label>
+      <input type="range" id="sc-wacc" min="3" max="25" step="0.25"
+             value="{{ '%.2f'|format(base_defaults.wacc * 100) }}">
+      <span class="scenario-readout" id="sc-wacc-val">{{ '%.2f'|format(base_defaults.wacc * 100) }}%</span>
+    </div>
+    <div class="scenario-slider-row">
+      <label for="sc-term">Terminal Growth</label>
+      <input type="range" id="sc-term" min="0" max="6" step="0.25"
+             value="{{ '%.2f'|format(base_defaults.terminal_growth_rate * 100) }}">
+      <span class="scenario-readout" id="sc-term-val">{{ '%.2f'|format(base_defaults.terminal_growth_rate * 100) }}%</span>
+    </div>
+  </div>
+
+  <div class="vc-stat-grid" style="margin-top:16px;">
+    <div class="vc-stat">
+      <span class="vc-stat-label">Implied {{ 'Share Price' if shares_outstanding else 'Enterprise Value' }}</span>
+      <span class="vc-stat-value" id="sc-result">&mdash;</span>
+    </div>
+  </div>
+
+  {% if not shares_outstanding %}
+  <p class="muted" style="font-size:12px; margin-top:6px;">
+    No shares-outstanding data available (private company or no ticker) &mdash; showing enterprise value in $M
+    instead of a per-share price.
+  </p>
+  {% endif %}
+</div>
+
+{% if not is_demo %}
+<div class="scenario-save-row">
+  <input type="text" id="sc-name" placeholder="Scenario name (e.g. Bull Case)" maxlength="50">
+  <button type="button" class="btn-refresh" id="sc-save-btn">Save Scenario</button>
+  <span id="sc-save-msg" class="muted" style="font-size:12px;"></span>
+</div>
+
+<h3 style="margin-top:20px;">Saved Scenarios</h3>
+<div style="overflow-x:auto; margin-bottom:28px;">
+  <table class="financials-table" id="sc-table">
+    <thead>
+      <tr>
+        <th>Scenario</th>
+        <th>Growth</th>
+        <th>EBIT Margin</th>
+        <th>Tax</th>
+        <th>WACC</th>
+        <th>Terminal g</th>
+        <th>{{ 'Implied Price' if shares_outstanding else 'Enterprise Value' }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="sc-table-body">
+      {% for s in scenarios %}
+      <tr data-scenario-id="{{ s.id }}">
+        <td style="font-weight:600;">{{ s.name }}</td>
+        <td>{{ '%.1f%%'|format(s.revenue_growth_rate * 100) }}</td>
+        <td>{{ '%.1f%%'|format(s.ebit_margin * 100) }}</td>
+        <td>{{ '%.1f%%'|format(s.tax_rate * 100) }}</td>
+        <td>{{ '%.2f%%'|format(s.wacc * 100) }}</td>
+        <td>{{ '%.2f%%'|format(s.terminal_growth_rate * 100) }}</td>
+        <td>{% if s.implied_price %}{{ s.implied_price | fmt_price }}{% else %}${{ "{:,.0f}M".format(s.enterprise_value) }}{% endif %}</td>
+        <td>
+          <form method="post" action="{{ url_for('portfolio.delete_scenario', analysis_id=analysis.id, scenario_id=s.id) }}" style="display:inline;">
+            <button type="submit" class="btn-danger scenario-delete-btn"
+                    onclick="return confirm('Delete this scenario?')">&times;</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if not scenarios %}
+<p class="muted" id="sc-empty-msg" style="font-size:13px; margin-top:-16px; margin-bottom:24px;">No saved scenarios yet.</p>
+{% endif %}
+{% endif %}
+
 <!-- Financials Table -->
 {% if model.get('fiscal_years') %}
 <h2>Financial Projections <span class="muted" style="font-size:13px; font-weight:400;">(model values in $M)</span></h2>
@@ -262,5 +370,149 @@
   </form>
 </div>
 {% endif %}
+
+<script>
+(function () {
+  const panel = document.querySelector(".scenario-panel");
+  if (!panel) return;
+
+  const baseRevenue = parseFloat(panel.dataset.baseRevenue) || null;
+  const sharesOutstanding = parseFloat(panel.dataset.sharesOutstanding) || null;
+
+  const growth = document.getElementById("sc-growth");
+  const margin = document.getElementById("sc-margin");
+  const tax = document.getElementById("sc-tax");
+  const wacc = document.getElementById("sc-wacc");
+  const term = document.getElementById("sc-term");
+
+  // Mirrors app/services/dcf.py run_dcf() — keep in sync if that changes.
+  function runDcf(baseRevenue, revenueGrowth, ebitMargin, taxRate, wacc, terminalGrowth, sharesOutstanding, years) {
+    years = years || 5;
+    if (wacc <= terminalGrowth) return null;
+    let pvSum = 0, revenue = baseRevenue, fcff = 0;
+    for (let t = 1; t <= years; t++) {
+      revenue = revenue * (1 + revenueGrowth);
+      fcff = revenue * ebitMargin * (1 - taxRate);
+      pvSum += fcff / Math.pow(1 + wacc, t);
+    }
+    const terminalValue = fcff * (1 + terminalGrowth) / (wacc - terminalGrowth);
+    const pvTerminal = terminalValue / Math.pow(1 + wacc, years);
+    const enterpriseValue = pvSum + pvTerminal;
+    const impliedPrice = sharesOutstanding && sharesOutstanding > 0 ? enterpriseValue / sharesOutstanding : null;
+    return { enterpriseValue, impliedPrice };
+  }
+
+  function fmtMoneyM(v) { return "$" + v.toLocaleString(undefined, { maximumFractionDigits: 0 }) + "M"; }
+  function fmtPrice(v) { return "$" + v.toFixed(2); }
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function recompute() {
+    document.getElementById("sc-growth-val").textContent = parseFloat(growth.value).toFixed(1) + "%";
+    document.getElementById("sc-margin-val").textContent = parseFloat(margin.value).toFixed(1) + "%";
+    document.getElementById("sc-tax-val").textContent = parseFloat(tax.value).toFixed(1) + "%";
+    document.getElementById("sc-wacc-val").textContent = parseFloat(wacc.value).toFixed(2) + "%";
+    document.getElementById("sc-term-val").textContent = parseFloat(term.value).toFixed(2) + "%";
+
+    const resultEl = document.getElementById("sc-result");
+    if (!baseRevenue) {
+      resultEl.textContent = "—";
+      return;
+    }
+
+    const result = runDcf(
+      baseRevenue,
+      parseFloat(growth.value) / 100,
+      parseFloat(margin.value) / 100,
+      parseFloat(tax.value) / 100,
+      parseFloat(wacc.value) / 100,
+      parseFloat(term.value) / 100,
+      sharesOutstanding
+    );
+
+    if (!result) {
+      resultEl.textContent = "WACC must exceed terminal growth";
+    } else if (result.impliedPrice != null) {
+      resultEl.textContent = fmtPrice(result.impliedPrice);
+    } else {
+      resultEl.textContent = fmtMoneyM(result.enterpriseValue);
+    }
+  }
+
+  [growth, margin, tax, wacc, term].forEach((el) => el.addEventListener("input", recompute));
+  recompute();
+
+  const saveBtn = document.getElementById("sc-save-btn");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", async () => {
+      const nameInput = document.getElementById("sc-name");
+      const msg = document.getElementById("sc-save-msg");
+      const name = nameInput.value.trim();
+      if (!name) {
+        msg.textContent = "Enter a scenario name.";
+        return;
+      }
+      saveBtn.disabled = true;
+      msg.textContent = "Saving…";
+      try {
+        const resp = await fetch("{{ url_for('portfolio.save_scenario', analysis_id=analysis.id) }}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name,
+            revenue_growth_rate: parseFloat(growth.value) / 100,
+            ebit_margin: parseFloat(margin.value) / 100,
+            tax_rate: parseFloat(tax.value) / 100,
+            wacc: parseFloat(wacc.value) / 100,
+            terminal_growth_rate: parseFloat(term.value) / 100,
+          }),
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.ok) {
+          msg.textContent = (data && data.error) || "Could not save scenario.";
+          return;
+        }
+        addScenarioRow(data.scenario);
+        nameInput.value = "";
+        msg.textContent = "Saved.";
+      } catch (err) {
+        msg.textContent = "Network error.";
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+  }
+
+  function addScenarioRow(s) {
+    const emptyMsg = document.getElementById("sc-empty-msg");
+    if (emptyMsg) emptyMsg.remove();
+
+    const tbody = document.getElementById("sc-table-body");
+    if (!tbody) return;
+
+    const resultText = s.implied_price != null ? fmtPrice(s.implied_price) : fmtMoneyM(s.enterprise_value);
+    const tr = document.createElement("tr");
+    tr.dataset.scenarioId = s.id;
+    tr.innerHTML = `
+      <td style="font-weight:600;">${escapeHtml(s.name)}</td>
+      <td>${(s.revenue_growth_rate * 100).toFixed(1)}%</td>
+      <td>${(s.ebit_margin * 100).toFixed(1)}%</td>
+      <td>${(s.tax_rate * 100).toFixed(1)}%</td>
+      <td>${(s.wacc * 100).toFixed(2)}%</td>
+      <td>${(s.terminal_growth_rate * 100).toFixed(2)}%</td>
+      <td>${resultText}</td>
+      <td>
+        <form method="post" action="/portfolio/analyze/{{ analysis.id }}/scenarios/${s.id}/delete" style="display:inline;">
+          <button type="submit" class="btn-danger scenario-delete-btn" onclick="return confirm('Delete this scenario?')">&times;</button>
+        </form>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+})();
+</script>
 
 {% endblock %}

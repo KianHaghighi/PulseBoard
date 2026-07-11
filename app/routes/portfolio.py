@@ -4,17 +4,18 @@ from datetime import datetime, timezone
 
 from flask import (
     Blueprint, render_template, redirect, url_for,
-    request, flash, abort, send_file,
+    request, flash, abort, send_file, jsonify,
 )
 from flask_login import login_required, current_user
 
 from ..extensions import db
-from ..models.models import Portfolio, PortfolioHolding, ValuationAnalysis
+from ..models.models import Portfolio, PortfolioHolding, ValuationAnalysis, ValuationScenario
 from ..services.portfolio_analyzer import (
     parse_excel, fetch_market_data,
     build_holding_analysis, build_portfolio_summary,
     parse_valuation_model, DEMO_USER_AUTH0_ID, DEMO_COMPANY_NAME,
 )
+from ..services.dcf import run_dcf, derive_base_defaults
 
 portfolio_bp = Blueprint("portfolio", __name__)
 
@@ -281,6 +282,11 @@ def view_demo_analysis():
     ).first_or_404()
 
     model_data = json.loads(analysis.data_json)
+    shares_outstanding = (
+        analysis.market_cap / analysis.current_price
+        if analysis.market_cap and analysis.current_price else None
+    )
+    scenarios = analysis.scenarios.order_by(ValuationScenario.created_at.asc()).all()
 
     return render_template(
         "portfolio/analysis_view.html",
@@ -288,6 +294,9 @@ def view_demo_analysis():
         model=model_data,
         edgar_snap=None,
         is_demo=True,
+        base_defaults=derive_base_defaults(model_data),
+        shares_outstanding=shares_outstanding,
+        scenarios=scenarios,
     )
 
 
@@ -312,11 +321,20 @@ def view_analysis(analysis_id):
                 .first()
             )
 
+    shares_outstanding = (
+        analysis.market_cap / analysis.current_price
+        if analysis.market_cap and analysis.current_price else None
+    )
+    scenarios = analysis.scenarios.order_by(ValuationScenario.created_at.asc()).all()
+
     return render_template(
         "portfolio/analysis_view.html",
         analysis=analysis,
         model=model_data,
         edgar_snap=edgar_snap,
+        base_defaults=derive_base_defaults(model_data),
+        shares_outstanding=shares_outstanding,
+        scenarios=scenarios,
     )
 
 
@@ -351,3 +369,83 @@ def delete_analysis(analysis_id):
     db.session.commit()
     flash("Analysis deleted.", "success")
     return redirect(url_for("portfolio.index"))
+
+
+@portfolio_bp.route("/analyze/<int:analysis_id>/scenarios", methods=["POST"])
+@login_required
+def save_scenario(analysis_id):
+    analysis = ValuationAnalysis.query.get_or_404(analysis_id)
+    if analysis.user_id != current_user.id:
+        abort(403)
+
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()[:50]
+    if not name:
+        return jsonify({"ok": False, "error": "Name is required."}), 400
+
+    try:
+        revenue_growth_rate = float(payload["revenue_growth_rate"])
+        ebit_margin = float(payload["ebit_margin"])
+        tax_rate = float(payload["tax_rate"])
+        wacc = float(payload["wacc"])
+        terminal_growth_rate = float(payload["terminal_growth_rate"])
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"ok": False, "error": "Invalid assumptions."}), 400
+
+    model_data = json.loads(analysis.data_json)
+    base_revenue = derive_base_defaults(model_data)["base_revenue"]
+    if not base_revenue:
+        return jsonify({"ok": False, "error": "No revenue data available for this model."}), 400
+
+    shares_outstanding = (
+        analysis.market_cap / analysis.current_price
+        if analysis.market_cap and analysis.current_price else None
+    )
+
+    result = run_dcf(
+        base_revenue, revenue_growth_rate, ebit_margin, tax_rate, wacc, terminal_growth_rate,
+        shares_outstanding=shares_outstanding,
+    )
+    if result is None:
+        return jsonify({"ok": False, "error": "WACC must be greater than the terminal growth rate."}), 400
+
+    scenario = ValuationScenario(
+        analysis_id=analysis.id,
+        name=name,
+        revenue_growth_rate=revenue_growth_rate,
+        ebit_margin=ebit_margin,
+        tax_rate=tax_rate,
+        wacc=wacc,
+        terminal_growth_rate=terminal_growth_rate,
+        enterprise_value=result["enterprise_value"],
+        implied_price=result["implied_price"],
+    )
+    db.session.add(scenario)
+    db.session.commit()
+
+    return jsonify({"ok": True, "scenario": {
+        "id": scenario.id,
+        "name": scenario.name,
+        "revenue_growth_rate": scenario.revenue_growth_rate,
+        "ebit_margin": scenario.ebit_margin,
+        "tax_rate": scenario.tax_rate,
+        "wacc": scenario.wacc,
+        "terminal_growth_rate": scenario.terminal_growth_rate,
+        "enterprise_value": scenario.enterprise_value,
+        "implied_price": scenario.implied_price,
+    }})
+
+
+@portfolio_bp.route("/analyze/<int:analysis_id>/scenarios/<int:scenario_id>/delete", methods=["POST"])
+@login_required
+def delete_scenario(analysis_id, scenario_id):
+    analysis = ValuationAnalysis.query.get_or_404(analysis_id)
+    if analysis.user_id != current_user.id:
+        abort(403)
+    scenario = ValuationScenario.query.get_or_404(scenario_id)
+    if scenario.analysis_id != analysis.id:
+        abort(403)
+    db.session.delete(scenario)
+    db.session.commit()
+    flash("Scenario deleted.", "success")
+    return redirect(url_for("portfolio.view_analysis", analysis_id=analysis_id))
