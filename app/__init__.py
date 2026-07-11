@@ -112,9 +112,14 @@ def _start_scheduler(app):
         run_jobs_refresh, "interval", hours=24, id="jobs_refresh",
         next_run_time=datetime.now(timezone.utc),
     )
+    # Deliberately not run immediately at boot like the other refresh jobs: a full
+    # refresh does per-row upserts against the DB for ~22k holdings across all
+    # managers (Citadel alone reports 12.8k positions), which is heavy enough on a
+    # free-tier instance + remote Postgres to starve the process during the startup
+    # window. First run is deferred to the normal 24h interval; trigger manually via
+    # the admin panel when you want it sooner.
     scheduler.add_job(
         run_institutional_refresh, "interval", hours=24, id="institutional_refresh",
-        next_run_time=datetime.now(timezone.utc),
     )
     scheduler.add_job(run_digest, "cron", hour=8, minute=0, id="daily_digest")
     scheduler.start()
