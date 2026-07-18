@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from flask import Flask
+from flask import Flask, redirect, request
 from flask_session import Session
 from .extensions import db, login_manager
 from .config import Config
@@ -11,6 +11,16 @@ def create_app(config=Config):
 
     # Initialize session
     Session(app)
+
+    @app.before_request
+    def _normalize_host_to_localhost():
+        """127.0.0.1 and localhost are different cookie origins, so a session
+        started on one won't be sent back on the other — this breaks Auth0's
+        OAuth state check (MismatchingStateError) if the user starts or lands
+        on 127.0.0.1 mid-flow. Force everything onto the host AUTH0_CALLBACK_URL
+        actually uses."""
+        if request.host.startswith("127.0.0.1"):
+            return redirect(request.url.replace("127.0.0.1", "localhost", 1))
 
     db.init_app(app)
     login_manager.init_app(app)
